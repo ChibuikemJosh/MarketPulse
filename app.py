@@ -57,9 +57,16 @@ queue_lock = threading.Lock()  # Mutex for protecting access to click_queue (thr
 
 app = Flask(__name__)
 
+# Initialize Flask-Login and bind it to this Flask app instance.
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+# Minimal user model required by Flask-Login for session handling.
 class User(UserMixin):
     def __init__(self, id):
         self.id = id
+
+# Rehydrate a user object from the session-stored user_id.
+@login_manager.user_loader
+def load_user(user_id):
+    return None
