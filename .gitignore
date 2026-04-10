@@ -206,5 +206,23 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-#environment files
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Environments
 .env
+venv/
+env/
+
+# Database (Don't upload your local user data/clicks)
+*.db
+marketpulse.db
+
+# Temp/Log files
+*.log
+*.tmp
+brand_config.json.tmp
+
+# OS files
+.DS_Store
