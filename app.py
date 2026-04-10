@@ -46,3 +46,8 @@ STATS_CACHE = {
     "ALPHA_VANTAGE": {'api_calls_today': 0,  # Counter for Alpha Vantage API calls made today
                     'last_reset_date': datetime.now().date()}  # Date when counter was last reset
     }
+
+# ============================================================================
+# QUEUE & THREAD SYNCHRONIZATION
+# ============================================================================
+click_queue = deque()  # Queue to batch clicks before writing to database (for performance)
