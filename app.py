@@ -51,3 +51,6 @@ STATS_CACHE = {
 # QUEUE & THREAD SYNCHRONIZATION
 # ============================================================================
 click_queue = deque()  # Queue to batch clicks before writing to database (for performance)
+
+cache_lock = threading.Lock()  # Mutex for protecting access to global caches (thread-safe)
+queue_lock = threading.Lock()  # Mutex for protecting access to click_queue (thread-safe)
