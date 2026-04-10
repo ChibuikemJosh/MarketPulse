@@ -56,3 +56,6 @@ cache_lock = threading.Lock()  # Mutex for protecting access to global caches (t
 queue_lock = threading.Lock()  # Mutex for protecting access to click_queue (thread-safe)
 
 app = Flask(__name__)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
