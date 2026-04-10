@@ -1,0 +1,21 @@
+# Web Framework
+flask
+flask-login
+python-dotenv
+werkzeug
+dotenv
+
+# Financial Data & APIs
+yfinance
+tradingview-screener
+finnhub-python
+google-generativeai
+
+# Data Processing & Analysis
+pandas
+numpy
+scikit-learn
+
+# Search & Utilities
+rapidfuzz
+requests
