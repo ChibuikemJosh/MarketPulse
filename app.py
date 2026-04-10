@@ -54,3 +54,5 @@ click_queue = deque()  # Queue to batch clicks before writing to database (for p
 
 cache_lock = threading.Lock()  # Mutex for protecting access to global caches (thread-safe)
 queue_lock = threading.Lock()  # Mutex for protecting access to click_queue (thread-safe)
+
+app = Flask(__name__)
