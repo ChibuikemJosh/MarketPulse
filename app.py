@@ -59,3 +59,7 @@ app = Flask(__name__)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
