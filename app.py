@@ -25,3 +25,10 @@ from rapidfuzz import fuzz
 
 # Your Custom Logic
 from helpers import get_market_news, get_stock_data
+
+# ============================================================================
+# CONFIGURATION & CONSTANTS
+# ============================================================================
+ALPHA_VANTAGE_API_LIMIT = 25  # Max Alpha Vantage API calls per day (free tier limit)
+DB_PATH = 'marketpulse.db'  # SQLite database filename
+TIME_FORMAT = '%Y-%m-%d %H:%M:%S'  # Standard datetime format for database timestamps
