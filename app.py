@@ -29,6 +29,20 @@ from helpers import get_market_news, get_stock_data
 # ============================================================================
 # CONFIGURATION & CONSTANTS
 # ============================================================================
-ALPHA_VANTAGE_API_LIMIT = 25  # Max Alpha Vantage API calls per day (free tier limit)
+API_LIMIT = {
+    "ALPHA_VANTAGE": 25
+    }  # Max Alpha Vantage API calls per day (free tier limit)
 DB_PATH = 'marketpulse.db'  # SQLite database filename
 TIME_FORMAT = '%Y-%m-%d %H:%M:%S'  # Standard datetime format for database timestamps
+
+# ============================================================================
+# GLOBAL CACHES - Thread-safe dictionary caches to minimize database/API calls
+# ============================================================================
+GLOBAL_WEIGHT_CACHE = {}  # Cache of popularity scores for all symbols (globally aggregated clicks)
+USER_SESSION_CACHES = {}  # Cache of user-specific click weights indexed by user_id {user_id: {symbol: weight}}
+TRENDING_SCORES = {}  # Cache of price change percentages for symbols {symbol: change_pct}
+CACHED_NAMES = {}  # Cache of cleaned company names for symbols {symbol: clean_name}
+STATS_CACHE = {
+    "ALPHA_VANTAGE": {'api_calls_today': 0,  # Counter for Alpha Vantage API calls made today
+                    'last_reset_date': datetime.now().date()}  # Date when counter was last reset
+    }
