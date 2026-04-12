@@ -87,3 +87,13 @@ try:
 except:
     MARKET_MAP = {}  # Graceful fallback if file not found
     print("Retrieval of MARKET_MAP Error")  # Users need to provide market_config.json
+
+# ============================================================================
+# API KEYS - Load environment variables for external services
+# ============================================================================
+try:
+    load_dotenv()  # Load from .env file in project root
+    ALPHA_VANTAGE_KEY = os.getenv("ALPHA_VANTAGE_KEY")  # API key for stock symbol search
+except Exception as e:
+    ALPHA_VANTAGE_KEY = ""  # Graceful fallback if key not found
+    print(f"Retreival of Alpha Vantage API key Error: {e}")
