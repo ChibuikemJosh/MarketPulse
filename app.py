@@ -135,3 +135,8 @@ def init_db():
         # Indexes speed up queries filtering by symbol or user_id
         db.execute('CREATE INDEX IF NOT EXISTS idx_symbol ON clicks(symbol)')
         db.execute('CREATE INDEX IF NOT EXISTS idx_user ON clicks(user_id)')
+
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Database Retrieval Error: {e}")
