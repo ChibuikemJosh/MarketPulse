@@ -131,3 +131,7 @@ def init_db():
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                    )
         ''')
+
+        # Indexes speed up queries filtering by symbol or user_id
+        db.execute('CREATE INDEX IF NOT EXISTS idx_symbol ON clicks(symbol)')
+        db.execute('CREATE INDEX IF NOT EXISTS idx_user ON clicks(user_id)')
