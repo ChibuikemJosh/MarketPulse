@@ -80,3 +80,10 @@ try:
 except:
     BRAND_MAP = {}  # Graceful fallback if file not found
     print("Retrieval of Brand_MAP Error")  # Users need to provide brand_config.json
+
+try:
+    with open('market_config.json', 'r', encoding='utf-8') as file:
+        MARKET_MAP = json.load(file)
+except:
+    MARKET_MAP = {}  # Graceful fallback if file not found
+    print("Retrieval of MARKET_MAP Error")  # Users need to provide market_config.json
