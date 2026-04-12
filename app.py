@@ -140,3 +140,9 @@ def init_db():
         conn.close()
     except Exception as e:
         print(f"Database Retrieval Error: {e}")
+
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
