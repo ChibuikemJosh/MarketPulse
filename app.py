@@ -70,3 +70,13 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     return None
+
+# ============================================================================
+# BRAND MAP - Load company symbols and aliases for search functionality
+# ============================================================================
+try:
+    with open('brand_config.json', 'r', encoding='utf-8') as file:
+        BRAND_MAP = json.load(file)  # {symbol: [alias1, alias2, ...]} for fuzzy matching
+except:
+    BRAND_MAP = {}  # Graceful fallback if file not found
+    print("Retrieval of Brand_MAP Error")  # Users need to provide brand_config.json
