@@ -121,3 +121,13 @@ def init_db():
                 hash TEXT NOT NULL
             )
         ''')
+
+        # Create clicks table to track which symbols users interact with (for trending/ranking)
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS clicks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT NOT NULL,
+                user_id TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                   )
+        ''')
