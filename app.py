@@ -26,6 +26,7 @@ from rapidfuzz import fuzz
 # Your Custom Logic
 from helpers import get_market_news, get_stock_data
 
+
 # ============================================================================
 # CONFIGURATION & CONSTANTS
 # ============================================================================
@@ -55,21 +56,26 @@ click_queue = deque()  # Queue to batch clicks before writing to database (for p
 cache_lock = threading.Lock()  # Mutex for protecting access to global caches (thread-safe)
 queue_lock = threading.Lock()  # Mutex for protecting access to click_queue (thread-safe)
 
+
 app = Flask(__name__)
+
 
 # Initialize Flask-Login and bind it to this Flask app instance.
 login_manager = LoginManager()
 login_manager.init_app(app)
+
 
 # Minimal user model required by Flask-Login for session handling.
 class User(UserMixin):
     def __init__(self, id):
         self.id = id
 
+
 # Rehydrate a user object from the session-stored user_id.
 @login_manager.user_loader
 def load_user(user_id):
     return None
+
 
 # ============================================================================
 # BRAND MAP - Load company symbols and aliases for search functionality
@@ -97,3 +103,21 @@ try:
 except Exception as e:
     ALPHA_VANTAGE_KEY = ""  # Graceful fallback if key not found
     print(f"Retreival of Alpha Vantage API key Error: {e}")
+
+
+def init_db():
+    """Initialize database tables if they don't exist.
+    Creates 'clicks' table for tracking user interactions and 'users' table for authentication.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        db = conn.cursor()
+
+        # Create users table for authentication and user identification
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                hash TEXT NOT NULL
+            )
+        ''')
