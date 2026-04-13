@@ -182,3 +182,13 @@ def get_user_weights(user_id):
         SELECT symbol, timestamp FROM clicks
         WHERE user_id = ? AND timestamp > ?
     ''', (user_id, thirty_days_ago))
+
+    user_weights = {}
+
+    # Apply exponential decay: weight = 0.8^(days_ago)
+    # Example: click from 1 day ago = 0.8^1 = 0.8 weight
+    #          click from 10 days ago = 0.8^10 ≈ 0.107 weight (older clicks matter less)
+    for symbol, timestamp in cursor:
+        timestamp = datetime.strptime(timestamp, TIME_FORMAT)
+        weight = 0.8 ** ((now - timestamp).total_seconds() / 86400)  # Convert seconds to days
+        user_weights[symbol] = user_weights.get(symbol, 0) + weight  # Accumulate weights for same symbol
