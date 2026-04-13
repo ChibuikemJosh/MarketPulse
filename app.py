@@ -192,3 +192,6 @@ def get_user_weights(user_id):
         timestamp = datetime.strptime(timestamp, TIME_FORMAT)
         weight = 0.8 ** ((now - timestamp).total_seconds() / 86400)  # Convert seconds to days
         user_weights[symbol] = user_weights.get(symbol, 0) + weight  # Accumulate weights for same symbol
+
+    conn.close()
+    
