@@ -200,3 +200,21 @@ def get_user_weights(user_id):
         USER_SESSION_CACHES[user_id] = user_weights
 
     return user_weights
+
+def load_global_weights():
+    """Aggregate click data across ALL users to determine globally trending symbols.
+    Uses logarithmic normalization to prevent a few popular symbols from dominating.
+    Called by background thread periodically.
+    """
+    global GLOBAL_WEIGHT_CACHE
+    conn = sqlite3.connect(DB_PATH)
+
+    now = datetime.now()
+    # Only consider clicks from past 30 days (older data becomes stale)
+    thirty_days_ago = (now - timedelta(days=30)).strftime(TIME_FORMAT)
+
+    # Get all clicks regardless of user
+    cursor = conn.execute('''
+                          SELECT symbol, timestamp FROM clicks
+                          WHERE timestamp > ?
+                          ''', (thirty_days_ago,))
