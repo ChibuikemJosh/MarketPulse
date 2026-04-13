@@ -147,4 +147,38 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+
 init_db()
+
+
+def get_user_weights(user_id):
+    """Retrieve personalized symbol weights for a user based on their click history.
+    Uses exponential decay: recent clicks weigh more than old clicks.
+    Caches results to avoid repeated database queries.
+
+    Args:
+        user_id: User identifier from session
+
+    Returns:
+        Dictionary {symbol: weight} representing user's preference for each symbol
+    """
+    global USER_SESSION_CACHES
+
+    # Return empty dict if no user ID provided (anonymous user)
+    if not user_id:
+        return {}
+
+    # Check in-memory cache first for performance
+    with cache_lock:
+        if user_id in USER_SESSION_CACHES:
+            return USER_SESSION_CACHES[user_id]
+
+    # Query database for all clicks from this user in past 30 days
+    conn = sqlite3.connect(DB_PATH)
+    now = datetime.now()
+    thirty_days_ago = (now - timedelta(days=30)).strftime(TIME_FORMAT)
+
+    cursor = conn.execute('''
+        SELECT symbol, timestamp FROM clicks
+        WHERE user_id = ? AND timestamp > ?
+    ''', (user_id, thirty_days_ago))
