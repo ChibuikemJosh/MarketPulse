@@ -194,4 +194,9 @@ def get_user_weights(user_id):
         user_weights[symbol] = user_weights.get(symbol, 0) + weight  # Accumulate weights for same symbol
 
     conn.close()
-    
+
+    # Store in cache to avoid querying database again for same user
+    with cache_lock:
+        USER_SESSION_CACHES[user_id] = user_weights
+
+    return user_weights
