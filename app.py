@@ -231,3 +231,11 @@ def load_global_weights():
         total_weighted_sum += weight
 
         conn.close()
+
+    # Normalize using logarithmic scale to compress range (prevent overfitting to a few symbols)
+    # Formula: log(score+1) / log(total+1) * 100 => normalizes to roughly 0-100 range
+    new_weights = {}
+    if total_weighted_sum > 0:
+        denominator = math.log(total_weighted_sum + 1)
+        for symbol, score in symbol_scores.items():
+            new_weights[symbol] = (math.log(score + 1)/ denominator) * 100
