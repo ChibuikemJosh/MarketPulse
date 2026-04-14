@@ -229,3 +229,5 @@ def load_global_weights():
 
         symbol_scores[symbol] = symbol_scores.get(symbol, 0) + weight
         total_weighted_sum += weight
+
+        conn.close()
