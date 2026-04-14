@@ -218,3 +218,14 @@ def load_global_weights():
                           SELECT symbol, timestamp FROM clicks
                           WHERE timestamp > ?
                           ''', (thirty_days_ago,))
+    
+    symbol_scores = {}  # Aggregate scores for each symbol
+    total_weighted_sum = 0  # Total weight across ALL clicks
+
+    # Apply same exponential decay as user weights
+    for symbol, timestamp in cursor:
+        timestamp = datetime.strptime(timestamp, TIME_FORMAT)
+        weight = 0.8 ** ((now - timestamp).total_seconds() / 86400)
+
+        symbol_scores[symbol] = symbol_scores.get(symbol, 0) + weight
+        total_weighted_sum += weight
