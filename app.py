@@ -239,3 +239,7 @@ def load_global_weights():
         denominator = math.log(total_weighted_sum + 1)
         for symbol, score in symbol_scores.items():
             new_weights[symbol] = (math.log(score + 1)/ denominator) * 100
+
+    # Update global cache used by search results
+    with cache_lock:
+        GLOBAL_WEIGHT_CACHE = new_weights
