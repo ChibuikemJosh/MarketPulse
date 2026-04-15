@@ -245,6 +245,31 @@ def load_global_weights():
         GLOBAL_WEIGHT_CACHE = new_weights
 
 
+def push_to_db():
+    """Flush all queued clicks to database in a single batch operation.
+    Called when click_queue reaches 10 items or manually.
+    """
+    batch_to_write = []
+
+    # Extract all queued clicks atomically
+    with queue_lock:
+        while click_queue:
+            batch_to_write.append(click_queue.popleft())
+
+    # No data to write
+    if not batch_to_write:
+        return None
+
+    # Write all clicks at once using executemany (more efficient than individual inserts)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.executemany('INSERT INTO clicks (symbol, user_id, timestamp) VALUES (?,?,?)', batch_to_write)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Database Error during push: {e}")
+
+
 def record_click(symbol, user_id=None):
     """Record a user's click on a symbol. Batches clicks before database write for efficiency.
     Updates in-memory cache immediately, adds click to queue for batch database insertion.
