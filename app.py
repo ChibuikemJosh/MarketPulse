@@ -319,3 +319,42 @@ def can_call_alpha_vantage_api():
             STATS_CACHE["last_reset_date"] = today
 
         return STATS_CACHE["api_calls_today"] < API_LIMIT["ALPHA_VANTAGE"]
+    
+
+    
+def fetch_data_from_alpha_vantage_api(query):
+    """Search for stock symbols via Alpha Vantage API.
+    Only called when internal search (BRAND_MAP) returns insufficient results.
+    Respects daily API quota to avoid rate limiting.
+
+    Args:
+        query: Search keyword (company name or partial symbol)
+
+    Returns:
+        list: Array of matching symbols from API, or None on failure/quota exceeded
+    """
+    # Don't make API call if daily quota exceeded
+    if not can_call_alpha_vantage_api():
+        return None
+
+    url = f'https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords={query}&apikey={ALPHA_VANTAGE_KEY}'
+
+    try:
+        r = requests.get(url, timeout=2)
+        r.raise_for_status()
+        data = r.json()
+
+        # Check for rate limit message
+        if "Note" in data:
+            print("Alpha Vantage Limit Reached. Skipping name fetch.")
+            return None
+
+        # Extract and return matching symbols
+        if "bestMatches" in data and len(data["bestMatches"]) > 0:
+            with cache_lock:
+                STATS_CACHE["api_calls_today"] += 1  # Increment counter only on successful call
+            return data["bestMatches"]
+        
+    except Exception as e:
+        print(f"Alpha Vantage Fetch Error: {e}")
+        return None
