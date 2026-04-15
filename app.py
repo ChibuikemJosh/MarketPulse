@@ -358,3 +358,47 @@ def fetch_data_from_alpha_vantage_api(query):
     except Exception as e:
         print(f"Alpha Vantage Fetch Error: {e}")
         return None
+
+
+def save_cache_to_disk():
+    """Persist cached company names to brand_config.json.
+    Uses atomic write (temp file + rename) to prevent corruption if write fails.
+    Called periodically by background thread.
+    """
+    global CACHED_NAMES
+    file_path = 'brand_config.json'
+
+    # Snapshot cache to avoid holding lock during file I/O
+    with cache_lock:
+        names_snapshot = dict(CACHED_NAMES)
+
+    temp_file = None  # Initialize temp_file variable for cleanup in case of error
+    
+    try:
+        # Load existing file or start fresh
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+        else:
+            existing_data = {}
+
+        # Merge new names into existing data
+        for symbol, name in names_snapshot.items():
+            if symbol not in existing_data:
+                existing_data[symbol] = [name]
+            else:
+                if name not in existing_data[symbol]:
+                    existing_data[symbol].append(name)  # Insert name to brand
+
+        # Atomic write: write to temp file first, then rename
+        # This prevents data loss if process crashes during write
+        temp_file = file_path + '.tmp'
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            json.dump(existing_data, f, indent=4)
+
+        os.replace(temp_file, file_path)  # Atomic rename (replaces original)
+
+    except Exception as e:
+        print(f"Error saving brand_config: {e}")
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
