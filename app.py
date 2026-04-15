@@ -263,3 +263,15 @@ def record_click(symbol, user_id=None):
                 USER_SESSION_CACHES[user_id] = {}
 
             USER_SESSION_CACHES[user_id][symbol] = USER_SESSION_CACHES[user_id].get(symbol, 0) + 1.0
+
+    # Queue the click for batch database insertion
+    should_flush = False
+    with queue_lock:
+        click_queue.append((symbol, user_id, now.strftime(TIME_FORMAT)))
+
+        # Batch optimization: flush to database when queue reaches 10 items
+        # This reduces database I/O compared to writing on every click
+        should_flush = len(click_queue) >= 10
+
+    if should_flush:
+        push_to_db()
