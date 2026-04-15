@@ -243,3 +243,23 @@ def load_global_weights():
     # Update global cache used by search results
     with cache_lock:
         GLOBAL_WEIGHT_CACHE = new_weights
+
+
+def record_click(symbol, user_id=None):
+    """Record a user's click on a symbol. Batches clicks before database write for efficiency.
+    Updates in-memory cache immediately, adds click to queue for batch database insertion.
+
+    Args:
+        symbol: Stock symbol clicked (e.g., 'AAPL')
+        user_id: Optional user ID; if None, click is recorded as anonymous
+    """
+    global USER_SESSION_CACHES
+    now = datetime.now()
+
+    # Update in-memory user cache immediately (instant feedback for search ranking)
+    with cache_lock:
+        if user_id:
+            if user_id not in USER_SESSION_CACHES:
+                USER_SESSION_CACHES[user_id] = {}
+
+            USER_SESSION_CACHES[user_id][symbol] = USER_SESSION_CACHES[user_id].get(symbol, 0) + 1.0
