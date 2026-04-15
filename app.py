@@ -201,6 +201,7 @@ def get_user_weights(user_id):
 
     return user_weights
 
+
 def load_global_weights():
     """Aggregate click data across ALL users to determine globally trending symbols.
     Uses logarithmic normalization to prevent a few popular symbols from dominating.
@@ -300,3 +301,21 @@ def record_click(symbol, user_id=None):
 
     if should_flush:
         push_to_db()
+
+
+def can_call_alpha_vantage_api():
+    """Check if API call quota is available for today.
+    Alpha Vantage free tier allows 25 calls/day; counter resets at midnight UTC.
+
+    Returns:
+        bool: True if calls remaining, False if quota exceeded
+    """
+    today = datetime.now().date()
+
+    with cache_lock:
+        # Reset counter if date has changed
+        if today > STATS_CACHE["last_reset_date"]:
+            STATS_CACHE["api_calls_today"] = 0
+            STATS_CACHE["last_reset_date"] = today
+
+        return STATS_CACHE["api_calls_today"] < API_LIMIT["ALPHA_VANTAGE"]
