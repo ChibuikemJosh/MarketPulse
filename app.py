@@ -402,3 +402,32 @@ def save_cache_to_disk():
         print(f"Error saving brand_config: {e}")
         if os.path.exists(temp_file):
             os.remove(temp_file)
+
+
+def clean_stock_name(raw_name):
+    """Remove corporate suffixes and junk from company names for display.
+    Converts 'Apple Inc.' -> 'Apple' and 'Amazon.com Inc' -> 'Amazon.com'.
+
+    Args:
+        raw_name: Company name from yfinance or Alpha Vantage
+
+    Returns:
+        str: Cleaned name suitable for display in search results
+    """
+    if not raw_name:
+        return ""
+
+    # List of corporate suffixes to remove
+    junk = [
+        " Corporation", " Corp", " Inc.", " Inc", " Ltd.", " Ltd",
+        " Limited", " Plc", " Group", " Holdings", " Common Stock",
+        " Class A", " Class B", " ADR", " Co ", " Co."
+    ]
+
+    clean_name = raw_name
+    for word in junk:
+        # re.escape is smart—it ensures periods like 'Inc.' don't break the regex
+        clean_name = re.sub(re.escape(word), '', clean_name, flags=re.IGNORECASE)
+
+    # Remove trailing commas and extra whitespace
+    return clean_name.replace(',', '').strip()
