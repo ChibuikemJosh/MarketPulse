@@ -431,3 +431,19 @@ def clean_stock_name(raw_name):
 
     # Remove trailing commas and extra whitespace
     return clean_name.replace(',', '').strip()
+
+
+def update_trends():
+    """Periodic background task: update global weights, price trends, and cached names.
+    Called every 10 minutes by background thread.
+    Does not return; errors are logged but don't stop execution.
+    """
+    global TRENDING_SCORES
+    new_trends = {}  # New trending scores for all tracked symbols
+
+    # Refresh global weights and flush any queued clicks
+    try:
+        load_global_weights()
+        push_to_db()
+    except Exception as e:
+        print(f"Background Update Error: {e}", flush=True)
