@@ -433,6 +433,33 @@ def clean_stock_name(raw_name):
     return clean_name.replace(',', '').strip()
 
 
+def calc_price_change(symbol):
+    """Calculate percentage price change from previous market close via yfinance.
+    Used for trending scores if tradingview fails to boost symbols with positive momentum.
+
+    Args:
+        symbol: Stock symbol (e.g., 'AAPL')
+
+    Returns:
+        float: Percentage change (0 if error)
+    """
+    try:
+        ticker = yf.Ticker(symbol)
+
+        data = ticker.history(period="2d")
+
+        latest = data.iloc[-1]
+        previous = data.iloc[-2]
+
+        daily_change = ((latest['Close'] - previous['Close']) / previous['Close']) * 100
+
+        return daily_change
+
+    except Exception as e:
+        print(f"DEBUG: Error in Calculating Price Change for {symbol}: {e}", flush=True)
+
+    return 0  # Return 0 on any error
+
 def update_trends():
     """Periodic background task: update global weights, price trends, and cached names.
     Called every 10 minutes by background thread.
@@ -479,4 +506,4 @@ def update_trends():
                         new_trends[s] = round(float(change), 2)
 
                     else:
-                        new_trends[s] = 0.0
+                        new_trends[s] = calc_price_change(s)
