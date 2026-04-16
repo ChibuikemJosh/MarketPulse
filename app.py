@@ -447,3 +447,36 @@ def update_trends():
         push_to_db()
     except Exception as e:
         print(f"Background Update Error: {e}", flush=True)
+
+    market_groups = {}
+    for original_symbol in BRAND_MAP.keys():
+        info = MARKET_MAP.get(original_symbol)
+        if info:
+            m = info['market']
+            if m not in market_groups:
+                market_groups[m] = []
+            market_groups[m].append(original_symbol)
+
+    try:
+        for market_name, symbols in market_groups.items():
+            try:
+                # Fetch all stocks for this country
+                _, df = (Query()
+                         .set_markets(market_name)
+                         .select('name', 'change', 'description')
+                         .limit(5000)
+                         .get_scanner_data())
+
+                # Results to dictionary {TradingViewTicker: PercentChange}
+                price_results = dict(zip(df['name'], df['change']))
+                name_results = dict(zip(df['name'], df['description']))
+
+                for s in symbols:
+                    tv_ticker = MARKET_MAP[s]['tv_symbol']
+                    change = price_results.get(tv_ticker)
+
+                    if change is not None:
+                        new_trends[s] = round(float(change), 2)
+
+                    else:
+                        new_trends[s] = 0.0
