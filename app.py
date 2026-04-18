@@ -507,3 +507,36 @@ def update_trends():
 
                     else:
                         new_trends[s] = calc_price_change(s)
+
+                    final_name = None
+                    raw_name = name_results.get(tv_ticker)
+                    if raw_name:
+                        final_name = clean_stock_name(raw_name)
+
+                    if not final_name:
+                        ticker = yf.Ticker(s)
+                        info = ticker.info
+                        raw_name = info.get('shortName') or info.get('longName')
+                        if raw_name:
+                            final_name = clean_stock_name(raw_name)
+
+                    if not final_name and can_call_alpha_vantage_api():
+                        api_data = fetch_data_from_alpha_vantage_api(s)
+                        if api_data:
+                            final_name = clean_stock_name(api_data[0]["2. name"])
+                            time.sleep(12)
+
+                    if not final_name:
+                        # If both APIs fail, just take 'AAPL.TO' and make it 'AAPL'
+                        final_name = s.split('.')[0]
+                    
+                    with cache_lock:
+                        CACHED_NAMES[s] = final_name
+
+            except Exception as e:
+                print(f"DEBUG: Error updating market {market_name}: {e}", flush=True)
+                # Fill missing with 0.0 so the app doesn't crash
+                for s in symbols:
+                    new_trends[s] = 0.0
+    except Exception as e:
+        print(f"CRITICAL ERROR IN BATCH UPDATE: {e}", flush=True   )
