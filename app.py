@@ -546,3 +546,12 @@ def update_trends():
         TRENDING_SCORES = new_trends
 
     save_cache_to_disk()
+
+
+def update_caches():
+    """Infinite background loop: refresh all caches every 10 minutes (600 seconds).
+    Runs in daemon thread; automatically stops when main app stops.
+    """
+    while True:
+        update_trends()  # Update global weights, trends, and cached names
+        time.sleep(600)  # Wait 10 minutes before next refresh
