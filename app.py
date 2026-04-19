@@ -792,3 +792,31 @@ def search_suggest():
     # Get search results and return as JSON
     results = get_search_results(query, user_weights)
     return jsonify(results)
+
+
+@app.route("/api/trending")
+def get_trending_api():
+    # Get pagination parameters from the URL
+    offset = int(request.args.get('offset', 0))
+    limit = int(request.args.get('limit', 15))
+
+    # TRENDING_SCORES is stored as {symbol: price_change}.
+    stocks = [
+        {
+            'symbol': symbol,
+            'price_change': price_change,
+            'name': CACHED_NAMES.get(symbol, 'Unknown')
+        }
+        for symbol, price_change in sorted(
+            TRENDING_SCORES.items(),
+            key=lambda item: item[1],
+            reverse=True
+        )
+    ]
+
+    # Slice the data
+    chunk = stocks[offset : offset + limit]
+
+    # If we run out of stocks, we return an empty list
+    # (The JS will then decide to loop back or stop)
+    return jsonify(chunk)
