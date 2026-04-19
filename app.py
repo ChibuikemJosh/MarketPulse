@@ -729,3 +729,66 @@ def register():
         return redirect("/")
 
     return render_template("login.html")
+
+
+@app.route('/search_suggest', methods=["POST", "GET"])
+def search_suggest():
+    """AJAX endpoint for autocomplete suggestions.
+    Takes query param 'q' and returns matching symbols.
+    Authenticated users get personalized rankings based on their history.
+    Anonymous users can pass weights via query param.
+
+    Returns:
+        JSON array of [{symbol, name}] matches
+    """
+    # Get and normalize query
+    data = request.get_json() if request.is_json else {}
+    query = data.get('q', '').strip().upper()  # Normalize to uppercase for matching
+    if not query:
+        return jsonify([])  # Empty query returns empty results
+
+    # Get user ID from session (if logged in)
+    user_id = session.get("user_id")
+
+    # Load user weights from database or provided query param
+    if not user_id:
+        # Anonymous: use the history sent from localStorage
+        history = data.get('history', {})
+        user_weights = {}
+        now = datetime.now()
+
+        for symbol, timestamps in history.items():
+            for ts_str in timestamps:
+                try:
+                    # Parse JS ISO string
+                    ts = datetime.fromisoformat(ts_str.replace('Z', ''))
+                    # Same logic: weight = 0.8^(days_ago)
+                    days_ago = (now - ts).total_seconds() / 86400
+                    weight = 0.8 ** days_ago
+                    user_weights[symbol] = user_weights.get(symbol, 0) + weight
+                except Exception:
+                    continue
+
+    else:
+        # Authenticated user: load from database
+        user_weights = get_user_weights(user_id)
+
+    # Ensure symbols in user_weights have entries in trending/name caches
+    for symbol in user_weights.keys():
+        if symbol not in TRENDING_SCORES:
+            with cache_lock:
+                TRENDING_SCORES[symbol] = 0
+        if symbol not in CACHED_NAMES:
+            with cache_lock:
+                CACHED_NAMES[symbol] = symbol.split('.')[0]
+
+    # Normalize user weights: sum to 100 for consistent scaling
+    user_total_weight = sum(user_weights.values())
+    if user_total_weight > 0:
+        for symbol in user_weights:
+            # Logarithmic normalization prevents heavily-used symbols from dominating
+            user_weights[symbol] = (math.log(user_weights[symbol] + 1) / math.log(user_total_weight + 1)) * 100
+
+    # Get search results and return as JSON
+    results = get_search_results(query, user_weights)
+    return jsonify(results)
