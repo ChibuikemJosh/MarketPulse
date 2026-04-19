@@ -555,3 +555,82 @@ def update_caches():
     while True:
         update_trends()  # Update global weights, trends, and cached names
         time.sleep(600)  # Wait 10 minutes before next refresh
+
+
+def get_search_results(query, user_weights):
+    """Search BRAND_MAP for symbols matching query.
+    Combines fuzzy matching with user/global/trending boosts.
+    Falls back to Alpha Vantage API if results are sparse.
+
+    Args:
+        query: Search string (company name or symbol)
+        user_weights: Dict of normalized user preference weights {symbol: weight_0_100}
+
+    Returns:
+        list: Up to 8 matching symbols as [{symbol, name}] dicts
+    """
+    query_upper = query.upper()
+    query_lower = query.lower()
+    query_length = len(query)
+
+    results = []
+    seen_symbols = set()  # Track symbols we've already added to avoid duplicates
+
+    # Thresholds for fuzzy matching (hardcoded intentionally)
+    FUZZ_THRESHOLD = 50      # Minimum score to consider during search
+    FINAL_THRESHOLD = 60     # Minimum score needed to include in results
+
+    # Trending multiplier: gives more weight to trending scores if query is 2+ chars
+    # Short queries (1 char) get lower trending boost to prioritize exact matches
+    boost_multiplier = 1.0 if query_length >= 2 else 0.2
+
+    # First pass: search through BRAND_MAP (local symbols)
+    for symbol, aliases in BRAND_MAP.items():
+        symbol_upper = symbol.upper()
+
+        # Fuzzy matching priority:
+        # 1. Exact match? Score = 110 (highest)
+        if query_upper == symbol_upper:
+            fuzz_score = 110
+        # 2. Prefix match or alias contains query? Score = 105 (very high)
+        elif symbol_upper.startswith(query_upper) or any(query_lower in a.lower() for a in aliases):
+            fuzz_score = 105
+        # 3. Fuzzy match on symbol or aliases
+        else:
+            symbol_score = fuzz.token_set_ratio(query_upper, symbol_upper)
+            aliases_score = max([fuzz.token_set_ratio(query_lower, a.lower()) for a in aliases]) if aliases else 0
+            fuzz_score = max(symbol_score, aliases_score)
+
+        # Skip if below minimum threshold
+        if fuzz_score < FUZZ_THRESHOLD:
+            continue
+
+        # Fetch boost factors from caches
+        with cache_lock:
+            global_boost = GLOBAL_WEIGHT_CACHE.get(symbol, 0)  # Global popularity
+            trending_score = min(100, TRENDING_SCORES.get(symbol, 0))  # Price movement (capped at 100)
+
+        # Apply boost multipliers to each component
+        local_boost = 0.2 * user_weights.get(symbol, 0)          # User preference (max +20)
+        global_boost = 0.1 * global_boost                         # Global popularity (max +10)
+        trending_boost = abs(0.1 * trending_score * boost_multiplier)  # Price momentum (max +10, adjusted by query length)
+
+        # Total score = fuzzy match + personalization + trending
+        total_score = fuzz_score + local_boost + global_boost + trending_boost
+
+        # Add to results if passes threshold and not duplicate
+        if symbol not in seen_symbols and total_score >= FINAL_THRESHOLD:
+            display_symbol = symbol.split('.')[0]  # Strip exchange suffix (e.g., .TO -> AAPL)
+
+            # Get company name from cache, BRAND_MAP, or fallback to symbol
+            display_name = CACHED_NAMES.get(symbol)
+            if not display_name:
+                display_name = BRAND_MAP.get(symbol, display_symbol)[0]
+
+            results.append({
+                    'symbol': display_symbol,
+                    'name': display_name,
+                    'score': total_score,  # Temporary; removed before response
+                    'trend': trending_boost
+            })
+            seen_symbols.add(display_symbol)
