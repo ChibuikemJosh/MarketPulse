@@ -861,3 +861,16 @@ def index():
     initial_news = get_market_news()[:15]
 
     return render_template("index.html", trending_stocks=trending_stocks, news=initial_news)
+
+
+# ============================================================================
+# APPLICATION STARTUP
+# ============================================================================
+
+# Start the background cache update thread (daemon mode: exits when main app exits)
+threading.Thread(target=update_caches, daemon=True).start()
+
+# Launch Flask server
+# Using port 8080 (common in Codespaces)
+if __name__ == "__main__":
+    app.run(debug=True, port=8080)
