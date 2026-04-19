@@ -12,6 +12,7 @@ import finnhub
 import json
 import re
 
+
 def get_stock_data(symbol, period="1y", interval=None):
     """
     Fetches historical stock data from Yahoo Financce.
@@ -58,3 +59,55 @@ def get_stock_data(symbol, period="1y", interval=None):
 # Load variables from .env into the environment
 load_dotenv()
 
+
+def get_market_news(symbol=None, end_timestamp=None, last_id=None):
+    api_key = os.getenv("FINNHUB_API_KEY")
+    if not api_key:
+        return []
+
+    client = finnhub.Client(api_key=api_key)
+    time_to_strf = '%Y-%m-%d'
+
+    try:
+        if symbol:
+            # --- COMPANY NEWS (Date Based) ---
+            to_ts = int(end_timestamp) if end_timestamp else int(datetime.now().timestamp())
+            from_ts = to_ts - (7 * 24 * 60 * 60)
+
+
+            from_date = datetime.fromtimestamp(from_ts).strftime(time_to_strf)
+            to_date = datetime.fromtimestamp(to_ts).strftime(time_to_strf)
+            news = client.company_news(symbol.upper(), _from=from_date, to=to_date)
+
+            # Filtering logic
+            try:
+                with open('brand_config.json', 'r', encoding='utf-8') as file:
+                    brand_map = json.load(file)
+            except (FileNotFoundError, json.JSONDecodeError):
+                brand_map = {}
+
+            aliases = brand_map.get(symbol.upper(), [])
+            all_keywords = [k for k in ([symbol.upper()] + aliases) if k]
+
+            if all_keywords:
+                joined_keywords = "|".join([re.escape(k) for k in all_keywords])
+                regex = re.compile(fr"(?<!\w)({joined_keywords})(?!\w)", re.IGNORECASE)
+                return [item for item in news if re.search(regex, item.get('headline', ''))]
+
+            return news
+
+        else:
+            # --- GENERAL NEWS (ID Based) ---
+            # Finnhub returns the most recent 100-200 articles by default
+            all_general = client.general_news('general', min_id=0)
+
+            if last_id:
+                # Filter locally: only keep news older than the last one seen
+                # Assumes news IDs increase over time
+                return [n for n in all_general if n.get('id', 0) < int(last_id)][:20]
+
+            return all_general[:20]
+
+    except Exception as e:
+        print(f"Error fetching news: {e}")
+        return []
