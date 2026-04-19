@@ -727,3 +727,5 @@ def register():
 
         flash("Registered!")
         return redirect("/")
+
+    return render_template("login.html")
