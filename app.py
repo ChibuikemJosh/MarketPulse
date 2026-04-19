@@ -820,3 +820,26 @@ def get_trending_api():
     # If we run out of stocks, we return an empty list
     # (The JS will then decide to loop back or stop)
     return jsonify(chunk)
+
+
+@app.route('/record_click', methods=['POST'])
+def record_click_endpoint():
+    """Record a user's click on a stock symbol.
+    Used to track user interaction for personalized search rankings.
+
+    Expects JSON: {symbol: "AAPL"}
+    Returns: {status: "success" | "error"}
+    """
+    try:
+        data = request.get_json()
+        symbol = data.get('symbol').upper()
+
+        if not symbol:
+            return jsonify({"status": "error"}), 400
+
+        user_id = session.get("user_id")  # Get user ID from session (None if anonymous)
+        record_click(symbol, user_id)  # Record click in cache and queue for database
+
+        return jsonify({"status": "success"}), 200
+    except Exception:
+        return jsonify({"status": "error"}), 400
