@@ -684,3 +684,46 @@ def get_search_results(query, user_weights):
         r.pop('trend', None)
 
     return results[:8]  # Return top 8 results
+
+
+# ============================================================================
+# FLASK ROUTES
+# ============================================================================
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    """User registration endpoint.
+    GET: Display registration form.
+    POST: Create new user account with username and password (hashed with scrypt).
+    """
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        confirmation = request.form.get("confirmation")
+
+        # Validate input
+        if not username or not password or password != confirmation:
+            return "Invalid input", 400
+
+        # Hash password using scrypt (stronger than bcrypt)
+        hashed_pw = generate_password_hash(password, method='scrypt', salt_length=16)
+
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            # Insert new user into database
+            cur.execute("INSERT INTO users (username, hash) VALUES(?, ?)", (username, hashed_pw))
+            user_id = cur.lastrowid  # Get auto-generated user ID
+            conn.commit()
+            conn.close()
+        except sqlite3.IntegrityError:
+            return "Username already exists", 400  # UNIQUE constraint failed
+
+        # Automatically log in the new user
+        session["user_id"] = user_id
+        # Pre-load user's click weights from database
+        get_user_weights(user_id)
+
+        flash("Registered!")
+        return redirect("/")
