@@ -53,3 +53,8 @@ def get_stock_data(symbol, period="1y", interval=None):
     except Exception as e:
         print(f"Error Type: {type(e).__name__}, Message: {e}")
         return None
+    
+
+# Load variables from .env into the environment
+load_dotenv()
+
