@@ -539,4 +539,10 @@ def update_trends():
                 for s in symbols:
                     new_trends[s] = 0.0
     except Exception as e:
-        print(f"CRITICAL ERROR IN BATCH UPDATE: {e}", flush=True   )
+        print(f"CRITICAL ERROR IN BATCH UPDATE: {e}", flush=True)
+
+    # Update global trending scores and persist to disk
+    with cache_lock:
+        TRENDING_SCORES = new_trends
+
+    save_cache_to_disk()
