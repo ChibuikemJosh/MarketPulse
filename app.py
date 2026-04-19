@@ -858,7 +858,7 @@ def index():
                 'price_change': round(change, 2)
             })
 
-    initial_news = get_market_news()[:15]
+    initial_news = get_market_news()
 
     return render_template("index.html", trending_stocks=trending_stocks, news=initial_news)
 
