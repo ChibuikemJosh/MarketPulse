@@ -634,3 +634,42 @@ def get_search_results(query, user_weights):
                     'trend': trending_boost
             })
             seen_symbols.add(display_symbol)
+
+        # Second pass: If results sparse and query long enough, query Alpha Vantage API
+        if len(results) < 3 and len(query_lower) > 3:
+            try:
+                data = fetch_data_from_alpha_vantage_api(query_lower)
+                if not data:
+                    continue
+
+                for match in data:
+                    symbol = match["1. symbol"]
+
+                    # Get company name
+                    display_name = CACHED_NAMES.get(symbol)
+                    if not display_name:
+                        display_name = BRAND_MAP.get(symbol, symbol.split('.')[0])[0]
+
+                    # Apply same boost logic as above
+                    local_boost = 0.2 * user_weights.get(symbol, 0)
+
+                    with cache_lock:
+                        global_boost = 0.1 * GLOBAL_WEIGHT_CACHE.get(symbol, 0)
+                        trending_score = 0.1 * TRENDING_SCORES.get(symbol, 0)
+
+                    # API results get baseline score of 50 (lower than BRAND_MAP matches)
+                    total_score = 50 + local_boost + global_boost + trending_score
+
+                    if symbol not in seen_symbols and total_score >= FINAL_THRESHOLD:
+                        results.append({
+                        'symbol': symbol,
+                        'name': display_name,
+                        'score': total_score,
+                        'trend': trending_boost
+                    })
+                    seen_symbols.add(symbol)
+
+                    if len(results) >= 8:
+                        break
+            except Exception as e:
+                print(f"API Error: {e}")
