@@ -673,3 +673,14 @@ def get_search_results(query, user_weights):
                         break
             except Exception as e:
                 print(f"API Error: {e}")
+
+    # Sort by: score (descending), trend (descending), shortest symbol (ascending)
+    # Shortest symbols first if tied (AAPL before AAPL.TO)
+    results.sort(key=lambda x: (x['score'], x['trend'], -len(x['symbol'])), reverse=True)
+
+    # Remove temporary scoring fields before returning to client
+    for r in results:
+        r.pop('score', None)
+        r.pop('trend', None)
+
+    return results[:8]  # Return top 8 results
