@@ -843,3 +843,21 @@ def record_click_endpoint():
         return jsonify({"status": "success"}), 200
     except Exception:
         return jsonify({"status": "error"}), 400
+
+
+@app.route("/")
+def index():
+    # 1. Prepare Trending Stocks (Logic from your previous setup)
+    trending_stocks = []
+    with cache_lock:
+        sorted_movers = sorted(TRENDING_SCORES.items(), key=lambda x: abs(x[1]), reverse=True)[:15]
+        for symbol, change in sorted_movers:
+            trending_stocks.append({
+                'symbol': symbol,
+                'name': CACHED_NAMES.get(symbol, "Unknown"),
+                'price_change': round(change, 2)
+            })
+
+    initial_news = get_market_news()[:15]
+
+    return render_template("index.html", trending_stocks=trending_stocks, news=initial_news)
