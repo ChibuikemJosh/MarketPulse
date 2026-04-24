@@ -44,9 +44,9 @@ USER_SESSION_CACHES = {}  # Cache of user-specific click weights indexed by user
 TRENDING_SCORES = {}  # Cache of price change percentages for symbols {symbol: change_pct}
 CACHED_NAMES = {}  # Cache of cleaned company names for symbols {symbol: clean_name}
 STATS_CACHE = {
-    "ALPHA_VANTAGE": {'api_calls_today': 0,  # Counter for Alpha Vantage API calls made today
-                    'last_reset_date': datetime.now().date()}  # Date when counter was last reset
-    }
+    'api_calls_today': 0,  # Counter for Alpha Vantage API calls made today
+    'last_reset_date': datetime.now().date()  # Date when counter was last reset
+}
 
 # ============================================================================
 # QUEUE & THREAD SYNCHRONIZATION
@@ -74,6 +74,15 @@ class User(UserMixin):
 # Rehydrate a user object from the session-stored user_id.
 @login_manager.user_loader
 def load_user(user_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.execute("SELECT id FROM users WHERE id = ?", (int(user_id),))
+        row = cur.fetchone()
+        conn.close()
+        if row:
+            return User(str(row["id"]))
+    except Exception:
+        return None
     return None
 
 
@@ -231,7 +240,7 @@ def load_global_weights():
         symbol_scores[symbol] = symbol_scores.get(symbol, 0) + weight
         total_weighted_sum += weight
 
-        conn.close()
+    conn.close()
 
     # Normalize using logarithmic scale to compress range (prevent overfitting to a few symbols)
     # Formula: log(score+1) / log(total+1) * 100 => normalizes to roughly 0-100 range
@@ -400,7 +409,7 @@ def save_cache_to_disk():
 
     except Exception as e:
         print(f"Error saving brand_config: {e}")
-        if os.path.exists(temp_file):
+        if temp_file and os.path.exists(temp_file):
             os.remove(temp_file)
 
 
@@ -607,25 +616,26 @@ def get_search_results(query, user_weights):
 
         # Fetch boost factors from caches
         with cache_lock:
-            global_boost = GLOBAL_WEIGHT_CACHE.get(symbol, 0)  # Global popularity
+            global_weight = GLOBAL_WEIGHT_CACHE.get(symbol, 0)  # Global popularity
             trending_score = min(100, TRENDING_SCORES.get(symbol, 0))  # Price movement (capped at 100)
 
         # Apply boost multipliers to each component
         local_boost = 0.2 * user_weights.get(symbol, 0)          # User preference (max +20)
-        global_boost = 0.1 * global_boost                         # Global popularity (max +10)
+        global_boost = 0.1 * global_weight                        # Global popularity (max +10)
         trending_boost = abs(0.1 * trending_score * boost_multiplier)  # Price momentum (max +10, adjusted by query length)
 
         # Total score = fuzzy match + personalization + trending
         total_score = fuzz_score + local_boost + global_boost + trending_boost
 
-        # Add to results if passes threshold and not duplicate
-        if symbol not in seen_symbols and total_score >= FINAL_THRESHOLD:
-            display_symbol = symbol.split('.')[0]  # Strip exchange suffix (e.g., .TO -> AAPL)
+        display_symbol = symbol.split('.')[0]  # Strip exchange suffix (e.g., .TO -> AAPL)
 
+        # Add to results if passes threshold and not duplicate
+        if display_symbol not in seen_symbols and total_score >= FINAL_THRESHOLD:
             # Get company name from cache, BRAND_MAP, or fallback to symbol
             display_name = CACHED_NAMES.get(symbol)
             if not display_name:
-                display_name = BRAND_MAP.get(symbol, display_symbol)[0]
+                aliases_for_symbol = BRAND_MAP.get(symbol, [])
+                display_name = aliases_for_symbol[0] if aliases_for_symbol else display_symbol
 
             results.append({
                     'symbol': display_symbol,
@@ -635,44 +645,44 @@ def get_search_results(query, user_weights):
             })
             seen_symbols.add(display_symbol)
 
-        # Second pass: If results sparse and query long enough, query Alpha Vantage API
-        if len(results) < 3 and len(query_lower) > 3:
-            try:
-                data = fetch_data_from_alpha_vantage_api(query_lower)
-                if not data:
-                    continue
-
+    # Second pass: If results sparse and query long enough, query Alpha Vantage API
+    if len(results) < 3 and len(query_lower) > 3:
+        try:
+            data = fetch_data_from_alpha_vantage_api(query_lower)
+            if data:
                 for match in data:
                     symbol = match["1. symbol"]
+                    display_symbol = symbol.split('.')[0]
 
                     # Get company name
                     display_name = CACHED_NAMES.get(symbol)
                     if not display_name:
-                        display_name = BRAND_MAP.get(symbol, symbol.split('.')[0])[0]
+                        aliases_for_symbol = BRAND_MAP.get(symbol, [])
+                        display_name = aliases_for_symbol[0] if aliases_for_symbol else display_symbol
 
                     # Apply same boost logic as above
                     local_boost = 0.2 * user_weights.get(symbol, 0)
 
                     with cache_lock:
                         global_boost = 0.1 * GLOBAL_WEIGHT_CACHE.get(symbol, 0)
-                        trending_score = 0.1 * TRENDING_SCORES.get(symbol, 0)
+                        trending_boost = abs(0.1 * TRENDING_SCORES.get(symbol, 0) * boost_multiplier)
 
                     # API results get baseline score of 50 (lower than BRAND_MAP matches)
-                    total_score = 50 + local_boost + global_boost + trending_score
+                    total_score = 50 + local_boost + global_boost + trending_boost
 
-                    if symbol not in seen_symbols and total_score >= FINAL_THRESHOLD:
+                    if display_symbol not in seen_symbols and total_score >= FINAL_THRESHOLD:
                         results.append({
-                        'symbol': symbol,
-                        'name': display_name,
-                        'score': total_score,
-                        'trend': trending_boost
-                    })
-                    seen_symbols.add(symbol)
+                            'symbol': display_symbol,
+                            'name': display_name,
+                            'score': total_score,
+                            'trend': trending_boost
+                        })
+                        seen_symbols.add(display_symbol)
 
                     if len(results) >= 8:
                         break
-            except Exception as e:
-                print(f"API Error: {e}")
+        except Exception as e:
+            print(f"API Error: {e}")
 
     # Sort by: score (descending), trend (descending), shortest symbol (ascending)
     # Shortest symbols first if tied (AAPL before AAPL.TO)
@@ -831,8 +841,8 @@ def record_click_endpoint():
     Returns: {status: "success" | "error"}
     """
     try:
-        data = request.get_json()
-        symbol = data.get('symbol').upper()
+        data = request.get_json() or {}
+        symbol = (data.get('symbol') or '').upper().strip()
 
         if not symbol:
             return jsonify({"status": "error"}), 400
