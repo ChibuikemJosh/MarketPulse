@@ -57,8 +57,20 @@ cache_lock = threading.Lock()  # Mutex for protecting access to global caches (t
 queue_lock = threading.Lock()  # Mutex for protecting access to click_queue (thread-safe)
 
 
+load_dotenv() # Load from .env file in project root
+
+# ============================================================================
+# LOAD FLASK SECRET KEY
+# ============================================================================
+try:
+    FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY")  # Flask Secret Key for storing sessions
+except Exception as e:
+    FLASK_SECRET_KEY = ""  # Graceful fallback if key not found
+    print(f"Retreival of Flask Secret key Error: {e}")
+
 app = Flask(__name__)
 
+app.config['SECRET_KEY']= FLASK_SECRET_KEY  # Set Flask secret key for session management; should be a strong random value in production
 
 # Initialize Flask-Login and bind it to this Flask app instance.
 login_manager = LoginManager()
@@ -808,28 +820,38 @@ def search_suggest():
 def get_trending_api():
     # Get pagination parameters from the URL
     offset = int(request.args.get('offset', 0))
-    limit = int(request.args.get('limit', 15))
+    limit = 15
 
-    # TRENDING_SCORES is stored as {symbol: price_change}.
-    stocks = [
-        {
-            'symbol': symbol,
-            'price_change': price_change,
-            'name': CACHED_NAMES.get(symbol, 'Unknown')
-        }
-        for symbol, price_change in sorted(
-            TRENDING_SCORES.items(),
-            key=lambda item: item[1],
-            reverse=True
-        )
-    ]
+    try:
+        stocks_list = [
+            {
+                "symbol": symbol,
+                "name": CACHED_NAMES.get(symbol, "Unknown"),
+                "price_change": round(float(change), 2)
+            }
+            for symbol, change in TRENDING_SCORES.items()
+        ]
+        stocks_list = sorted(stocks_list, key=lambda x: abs(x["price_change"]), reverse=True)
+    except Exception as e:
+        print(f"Sorting Error: {e}")
+        stocks_list = []
+
+    stock_chunk = stocks_list[offset : offset + limit]
+
+    # 2. News Chunk - Ensure news_list is actually a list
+    news_list = session.get('news_cache', [])
+    if not isinstance(news_list, list):
+        news_list = []
 
     # Slice the data
-    chunk = stocks[offset : offset + limit]
+    news_chunk = news_list[offset : offset + limit]
 
     # If we run out of stocks, we return an empty list
     # (The JS will then decide to loop back or stop)
-    return jsonify(chunk)
+    return jsonify({
+        "stocks": stock_chunk,
+        "news": news_chunk
+    })
 
 
 @app.route('/record_click', methods=['POST'])
@@ -868,7 +890,8 @@ def index():
                 'price_change': round(change, 2)
             })
 
-    initial_news = get_market_news()
+    session['news_cache'] = get_market_news()
+    initial_news = session['news_cache'][:15] if isinstance(session['news_cache'], list) else []  # Ensure it's a list before slicing
 
     return render_template("index.html", trending_stocks=trending_stocks, news=initial_news)
 
