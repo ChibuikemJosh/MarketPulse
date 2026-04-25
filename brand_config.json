@@ -1,0 +1,921 @@
+{
+    "AAPL": [
+        "Apple",
+        "iphone",
+        "ipad",
+        "macbook",
+        "ios",
+        "airpods",
+        "icloud"
+    ],
+    "MSFT": [
+        "Microsoft",
+        "windows",
+        "azure",
+        "xbox",
+        "linkedin",
+        "openai",
+        "github"
+    ],
+    "GOOGL": [
+        "Alphabet",
+        "Google",
+        "alphabet",
+        "youtube",
+        "android",
+        "waymo",
+        "gemini",
+        "deepmind"
+    ],
+    "AMZN": [
+        "Amazon.com",
+        "Amazon",
+        "aws",
+        "kindle",
+        "audible",
+        "twitch",
+        "whole foods",
+        "rivian",
+        "prime"
+    ],
+    "META": [
+        "Meta Platforms",
+        "Meta",
+        "facebook",
+        "instagram",
+        "whatsapp",
+        "metaverse",
+        "oculus",
+        "threads",
+        "zuckerberg"
+    ],
+    "NVDA": [
+        "NVIDIA",
+        "Nvidia",
+        "geforce",
+        "rtx",
+        "h100",
+        "cuda",
+        "jensen huang",
+        "chips",
+        "gpu",
+        "ai"
+    ],
+    "TSLA": [
+        "Tesla",
+        "spacex",
+        "elon musk",
+        "model 3",
+        "model y",
+        "cybertruck",
+        "autopilot",
+        "ev"
+    ],
+    "AVGO": [
+        "Broadcom",
+        "vmware",
+        "symantec"
+    ],
+    "ORCL": [
+        "Oracle",
+        "java",
+        "netsuite",
+        "cerner",
+        "cloud",
+        "database"
+    ],
+    "ADBE": [
+        "Adobe",
+        "photoshop",
+        "creative cloud",
+        "illustrator"
+    ],
+    "CRM": [
+        "Salesforce",
+        "slack"
+    ],
+    "NFLX": [
+        "Netflix",
+        "squid game",
+        "streaming",
+        "movies"
+    ],
+    "AMD": [
+        "Advanced Micro Devices",
+        "AMD",
+        "ryzen",
+        "chips"
+    ],
+    "INTC": [
+        "Intel",
+        "core i9"
+    ],
+    "ASML": [
+        "ASML Holding N.V. - New York Registry Shares",
+        "ASML",
+        "lithography",
+        "euv"
+    ],
+    "MU": [
+        "Micron Technology",
+        "Micron",
+        "dram",
+        "nand"
+    ],
+    "ARM": [
+        "Arm",
+        "ARM Holdings",
+        "arm architecture"
+    ],
+    "JPM": [
+        "JP Morgan Chase &",
+        "JPMorgan",
+        "chase",
+        "jamie dimon",
+        "bank"
+    ],
+    "BAC": [
+        "Bank of America"
+    ],
+    "V": [
+        "Visa",
+        "contactless",
+        "payments",
+        "credit card"
+    ],
+    "MA": [
+        "Mastercardorporated",
+        "Mastercard",
+        "payments"
+    ],
+    "PYPL": [
+        "PayPal",
+        "Paypal",
+        "venmo"
+    ],
+    "GS": [
+        "Goldman Sachs (The)",
+        "Goldman Sachs"
+    ],
+    "MS": [
+        "Morgan Stanley"
+    ],
+    "AXP": [
+        "American Express Company",
+        "American Express",
+        "amex"
+    ],
+    "BRK-B": [
+        "Berkshire Hathaway New",
+        "Berkshire Hathaway",
+        "warren buffett",
+        "geico",
+        "duracell",
+        "alleghany",
+        "insurance",
+        "dairy queen"
+    ],
+    "WMT": [
+        "Walmart",
+        "sam's club",
+        "retail"
+    ],
+    "COST": [
+        "Costco Wholesale",
+        "Costco",
+        "kirkland signature",
+        "wholesale"
+    ],
+    "HD": [
+        "Home Depot (The)",
+        "Home Depot"
+    ],
+    "NKE": [
+        "Nike",
+        "jordan",
+        "shoes"
+    ],
+    "KO": [
+        "Coca-Cola Company (The)",
+        "Coca-Cola",
+        "coke"
+    ],
+    "PEP": [
+        "PepsiCo",
+        "Pepsi",
+        "gatorade"
+    ],
+    "PG": [
+        "Procter & Gamble Company (The)",
+        "Procter & Gamble",
+        "p&g",
+        "tide",
+        "pampers"
+    ],
+    "SBUX": [
+        "Starbucks",
+        "coffee"
+    ],
+    "DIS": [
+        "Walt Disney Company (The)",
+        "Disney",
+        "marvel",
+        "pixar"
+    ],
+    "MCD": [
+        "McDonald's",
+        "burger"
+    ],
+    "LLY": [
+        "Eli Lilly and Company",
+        "Eli Lilly",
+        "mounjaro",
+        "zepbound",
+        "prozac",
+        "pharma"
+    ],
+    "JNJ": [
+        "Johnson & Johnson",
+        "j&j"
+    ],
+    "NVO": [
+        "Novo Nordisk A/S",
+        "Novo Nordisk",
+        "ozempic",
+        "wegovy",
+        "insulin"
+    ],
+    "PFE": [
+        "Pfizer",
+        "viagra",
+        "comirnaty"
+    ],
+    "ABBV": [
+        "AbbVie",
+        "humira"
+    ],
+    "UNH": [
+        "UnitedHealthorporated",
+        "UnitedHealth",
+        "optum",
+        "healthcare"
+    ],
+    "XOM": [
+        "Exxon Mobil",
+        "ExxonMobil",
+        "esso",
+        "oil",
+        "fuel"
+    ],
+    "CVX": [
+        "Chevron",
+        "oil"
+    ],
+    "GE": [
+        "GE Aerospace",
+        "General Electric",
+        "ge"
+    ],
+    "BA": [
+        "Boeing Company (The)",
+        "Boeing"
+    ],
+    "UPS": [
+        "United Parcel Service",
+        "UPS",
+        "shipping"
+    ],
+    "FDX": [
+        "FedEx"
+    ],
+    "A": [
+        "Agilent Technologies",
+        "Agilent",
+        "technologies",
+        "life sciences",
+        "lab"
+    ],
+    "B": [
+        "Barrick Mining",
+        "Barnes",
+        "industrial",
+        "aerospace"
+    ],
+    "C": [
+        "Citigroup",
+        "citi",
+        "bank",
+        "financial"
+    ],
+    "D": [
+        "Dominion Energy",
+        "utility",
+        "power",
+        "grid"
+    ],
+    "E": [
+        "ENI S.p.A.",
+        "Eni",
+        "energy",
+        "petroleum",
+        "gas"
+    ],
+    "F": [
+        "Ford Motor Company",
+        "Ford",
+        "automotive",
+        "motor",
+        "f-150"
+    ],
+    "G": [
+        "Genpact",
+        "professional services",
+        "digital"
+    ],
+    "H": [
+        "Hyatt Hotels",
+        "Hyatt",
+        "hotel",
+        "hospitality",
+        "resort"
+    ],
+    "I": [
+        "Itau Unibanco Banco Holding SA",
+        "I",
+        "Italgas S.p.A",
+        "Intelsat",
+        "satellite",
+        "communications"
+    ],
+    "K": [
+        "K",
+        "Kinross Gold",
+        "Kellanova",
+        "kellogg",
+        "cereal",
+        "snacks"
+    ],
+    "L": [
+        "Loews",
+        "insurance",
+        "energy",
+        "hotels"
+    ],
+    "M": [
+        "Macy's",
+        "retail",
+        "department store"
+    ],
+    "N": [
+        "NetEase",
+        "N",
+        "N100",
+        "NetSuite",
+        "software",
+        "erp"
+    ],
+    "O": [
+        "Realtyome",
+        "Realty Income",
+        "reit",
+        "dividend"
+    ],
+    "P": [
+        "Pandora A/S",
+        "P",
+        "PAKUWON JATI RP 25",
+        "Pandora",
+        "jewelry",
+        "music"
+    ],
+    "Q": [
+        "Qnity Electronics",
+        "IQVIA",
+        "quintiles",
+        "healthcare"
+    ],
+    "R": [
+        "Ryder System",
+        "Ryder",
+        "logistics",
+        "trucking"
+    ],
+    "S": [
+        "SentinelOne",
+        "cybersecurity",
+        "security"
+    ],
+    "T": [
+        "AT&T",
+        "telecom",
+        "wireless"
+    ],
+    "W": [
+        "Wayfair",
+        "furniture",
+        "e-commerce"
+    ],
+    "X": [
+        "X",
+        "TMX",
+        "US Steel",
+        "steel",
+        "manufacturing"
+    ],
+    "Y.TO": [
+        "YELLOW PAGES",
+        "Y",
+        "Yellow Pages",
+        "YP",
+        "directory",
+        "advertising"
+    ],
+    "Z": [
+        "Zillow",
+        "real estate",
+        "housing"
+    ],
+    "CAT": [
+        "Caterpillar"
+    ],
+    "APP": [
+        "Applovin",
+        "AppLovin",
+        "software",
+        "mobile ads"
+    ],
+    "ALL": [
+        "Allstate (The)",
+        "Allstate",
+        "insurance"
+    ],
+    "NOW": [
+        "ServiceNow",
+        "workflow",
+        "cloud computing"
+    ],
+    "SUN": [
+        "Sunoco LP",
+        "Sunoco",
+        "fuel",
+        "gasoline"
+    ],
+    "PLAY": [
+        "Dave & Buster's Entertainment",
+        "Dave & Buster's",
+        "entertainment"
+    ],
+    "FUN": [
+        "Six Flags Entertainment",
+        "Six Flags",
+        "amusement park"
+    ],
+    "LUV": [
+        "Southwest Airlines Company",
+        "Southwest Airlines",
+        "aviation",
+        "airline"
+    ],
+    "HOG": [
+        "Harley-Davidson",
+        "motorcycle",
+        "bike"
+    ],
+    "SAVE": [
+        "SAVE",
+        "Spirit Airlines",
+        "airline",
+        "travel"
+    ],
+    "ACCESSCORP.LG": [
+        "Access",
+        "Access Bank",
+        "access corp"
+    ],
+    "GTCO.LG": [
+        "Guaranty Trust Holding Company",
+        "GTBank",
+        "guaranty trust",
+        "gtco"
+    ],
+    "ZENITHBANK.LG": [
+        "Zenith Bank",
+        "zenith"
+    ],
+    "UBA.LG": [
+        "United Bank for Africa",
+        "UBA",
+        "united bank for africa",
+        "tony elumelu"
+    ],
+    "FBNH.LG": [
+        "First HoldCo",
+        "FBNH",
+        "First Bank",
+        "fbnh"
+    ],
+    "MTNN.LG": [
+        "MTN Nigeria Communications",
+        "MTN Nigeria",
+        "mtn",
+        "telecom"
+    ],
+    "AIRTELAFRI.LG": [
+        "Airtel Africa",
+        "Airtel",
+        "data",
+        "telecom"
+    ],
+    "DANGCEM.LG": [
+        "Dangote Cement",
+        "dangote",
+        "aliko"
+    ],
+    "DANGSUGAR.LG": [
+        "Dangote Sugar Refinery",
+        "Dangote Sugar",
+        "nascon"
+    ],
+    "BUACEMENT.LG": [
+        "BUA Cement",
+        "rabiu",
+        "bua group"
+    ],
+    "BUAFOODS.LG": [
+        "BUA Foods",
+        "sugar",
+        "pasta"
+    ],
+    "NESTLE.LG": [
+        "Nestle Nigeria"
+    ],
+    "NB.LG": [
+        "Nigerian Breweries",
+        "star beer"
+    ],
+    "GUINNESS.LG": [
+        "Guinness Nigeria",
+        "Guinness",
+        "stout"
+    ],
+    "FLOURMILL.LG": [
+        "FLOURMILL",
+        "Flour Mills",
+        "golden penny"
+    ],
+    "TOTAL.LG": [
+        "TotalEnergies Marketing Nigeria",
+        "TotalEnergies",
+        "total nigeria"
+    ],
+    "SEPLAT.LG": [
+        "Seplat Energy",
+        "oil",
+        "gas"
+    ],
+    "OANDO.LG": [
+        "Oando",
+        "energy"
+    ],
+    "TRANSCORP.LG": [
+        "Transnational of Nigeria",
+        "Transcorp",
+        "transcorp hotels",
+        "power"
+    ],
+    "GEREGU.LG": [
+        "Geregu Power",
+        "otedola"
+    ],
+    "WEMABANK.LG": [
+        "Wema Bank",
+        "alat"
+    ],
+    "FIDELITYBK.LG": [
+        "Fidelity Bank",
+        "fidelity"
+    ],
+    "STANBIC.LG": [
+        "Stanbic IBTC",
+        "stanbic"
+    ],
+    "UCAP.LG": [
+        "United Capital",
+        "investment"
+    ],
+    "AIICO.LG": [
+        "Aiico Insurance",
+        "AIICO Insurance",
+        "insurance"
+    ],
+    "MANSARD.LG": [
+        "AXA Mansard Insurance",
+        "AXA Mansard",
+        "axa",
+        "health insurance"
+    ],
+    "ASML.AS": [
+        "ASML Holding NV",
+        "ASML",
+        "lithography",
+        "chips"
+    ],
+    "MC.PA": [
+        "LVMH Moet Hennessy Louis Vuitton SE",
+        "LVMH",
+        "louis vuitton",
+        "luxury"
+    ],
+    "SAP.DE": [
+        "SAP SE",
+        "SAP",
+        "software"
+    ],
+    "SHEL.L": [
+        "Shell",
+        "oil",
+        "uk"
+    ],
+    "7203.T": [
+        "Toyota Motor.",
+        "Toyota",
+        "cars",
+        "japan"
+    ],
+    "SONY": [
+        "Sony",
+        "playstation"
+    ],
+    "BABA": [
+        "Alibaba Holding",
+        "Alibaba",
+        "china",
+        "jack ma"
+    ],
+    "600519.SS": [
+        "Kweichow Moutai",
+        "liquor",
+        "china"
+    ],
+    "LIN": [
+        "Linde",
+        "gas",
+        "chemicals"
+    ],
+    "NSRGY": [
+        "Nestle S.A.",
+        "Nestle",
+        "food",
+        "milo",
+        "maggi"
+    ],
+    "RY.TO": [
+        "Royal Bank of Canada",
+        "Royal Bank",
+        "rbc",
+        "canada"
+    ],
+    "SHOP.TO": [
+        "Shopify",
+        "ecommerce"
+    ],
+    "BP.L": [
+        "BP",
+        "british petroleum"
+    ],
+    "HSBA.L": [
+        "HSBC",
+        "bank",
+        "london"
+    ],
+    "VOW3.DE": [
+        "Volkswagen AG Pref",
+        "Volkswagen",
+        "vw",
+        "cars"
+    ],
+    "AIR.PA": [
+        "Airbus SE",
+        "Airbus",
+        "planes"
+    ],
+    "OR.PA": [
+        "L'Oreal S.A.",
+        "L'Oreal",
+        "makeup"
+    ],
+    "RMS.PA": [
+        "Hermes International SCA",
+        "Hermes",
+        "birkin"
+    ],
+    "TTE.PA": [
+        "TotalEnergies SE",
+        "TotalEnergies",
+        "france",
+        "oil"
+    ],
+    "MBG.DE": [
+        "Mercedes-Benz AG",
+        "Mercedes-Benz",
+        "cars"
+    ],
+    "BMW.DE": [
+        "Bayerische Motoren Werke AG",
+        "BMW",
+        "cars"
+    ],
+    "NESN.SW": [
+        "Nestle S.A.",
+        "Nestle",
+        "switzerland",
+        "food"
+    ],
+    "NOVN.SW": [
+        "Novartis AG",
+        "Novartis",
+        "pharma",
+        "drugs"
+    ],
+    "ROG.SW": [
+        "Roche Holding",
+        "ROG",
+        "Roche",
+        "pharma",
+        "biotech"
+    ],
+    "AZN.L": [
+        "AstraZeneca",
+        "pharma"
+    ],
+    "ULVR.L": [
+        "Unilever",
+        "dove"
+    ],
+    "RIO.L": [
+        "Rio Tinto",
+        "mining"
+    ],
+    "REL.L": [
+        "RELX",
+        "data",
+        "publishing"
+    ],
+    "GSK.L": [
+        "GSK",
+        "glaxosmithkline",
+        "healthcare"
+    ],
+    "TD.TO": [
+        "Toronto-Dominion Bank",
+        "TD Bank",
+        "toronto dominion"
+    ],
+    "ENB.TO": [
+        "Enbridge",
+        "pipeline",
+        "energy"
+    ],
+    "CP.TO": [
+        "Canadian Pacific Kansas City",
+        "Canadian Pacific",
+        "railway"
+    ],
+    "HDFCBANK.NS": [
+        "HDFC Bank",
+        "india"
+    ],
+    "RELIANCE.NS": [
+        "Reliance Industries",
+        "Reliance",
+        "ambani",
+        "india"
+    ],
+    "TCS.NS": [
+        "Tata Consultancy Services",
+        "TCS",
+        "tata"
+    ],
+    "INFY.NS": [
+        "Infosys",
+        "it"
+    ],
+    "9984.T": [
+        "SoftBank.",
+        "SoftBank",
+        "masayoshi son",
+        "vision fund"
+    ],
+    "9983.T": [
+        "FAST RETAILING",
+        "Fast Retailing",
+        "uniqlo"
+    ],
+    "6758.T": [
+        "Sony",
+        "Sony Group",
+        "electronics"
+    ],
+    "TSM": [
+        "Taiwan Semiconductor Manufacturing Company",
+        "TSMC",
+        "taiwan semi",
+        "chips"
+    ],
+    "005930.KS": [
+        "Samsung Electronics",
+        "Samsung",
+        "korea",
+        "electronics"
+    ],
+    "000660.KS": [
+        "SK hynix",
+        "SK Hynix",
+        "chips",
+        "memory"
+    ],
+    "SPOT": [
+        "Spotify Technology S.A.",
+        "Spotify",
+        "music"
+    ],
+    "VALE": [
+        "VALE S.A.",
+        "Vale",
+        "brazil"
+    ],
+    "PETR4.SA": [
+        "Petroleo Brasileiro SA Pfd",
+        "Petrobras",
+        "brazil"
+    ],
+    "BUD": [
+        "Anheuser-Busch Inbev SA Sponsored",
+        "Anheuser-Busch",
+        "beer",
+        "brewery"
+    ],
+    "AD.AS": [
+        "Koninklijke Ahold Delhaize N.V.",
+        "Ahold Delhaize",
+        "grocery"
+    ],
+    "STLA": [
+        "Stellantis N.V.",
+        "Stellantis",
+        "fiat",
+        "chrysler",
+        "peugeot"
+    ],
+    "SAN.MC": [
+        "Banco Santander S.A.",
+        "Santander",
+        "bank",
+        "spain"
+    ],
+    "ITX.MC": [
+        "Industria de Diseno Textil S.A.",
+        "Inditex",
+        "zara",
+        "fashion"
+    ],
+    "TRANSPOWER.LG": [
+        "Transcorp Power",
+        "electricity"
+    ],
+    "MRK": [
+        "Merck & Company",
+        "Merck",
+        "pharma"
+    ],
+    "WFC": [
+        "Wells Fargo & Company",
+        "Wells Fargo"
+    ],
+    "IBM": [
+        "International Business Machines",
+        "IBM",
+        "watson"
+    ],
+    "CSCO": [
+        "Cisco Systems",
+        "Cisco",
+        "networking"
+    ],
+    "UBER": [
+        "Uber Technologies",
+        "Uber",
+        "taxi"
+    ],
+    "ABNB": [
+        "Airbnb",
+        "hotels"
+    ],
+    "SQ": [
+        "SQ",
+        "Square",
+        "Block",
+        "square",
+        "cashapp"
+    ]
+}
