@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block title %}Market Heat{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/homepage.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h4 class="fw-bold mb-1">Market Pulse</h4>
+    <p class="text-muted small">Stocks ranked by market activity and volatility.</p>
+</div>
+
+<div class="trending-list" id="trending-container">
+    <div class="row g-0 text-muted tiny-text fw-bold text-uppercase px-3 mb-2">
+        <div class="col-6">Asset</div>
+        <div class="col-6 text-end">Performance</div>
+    </div>
+    {% if trending_stocks|length == 0 %}
+        <div class="text-center text-muted py-5">
+            <p class="mb-2">No trending stocks found.</p>
+            <small class="tiny-text">Try refreshing the page or check back later.</small>
+        </div>
+    {% else %}
+        {% for stock in trending_stocks %}
+        <a href="/quote?symbol={{ stock.symbol }}" class="trending-row d-flex align-items-center justify-content-between p-3 mb-2 rounded-3 text-decoration-none">
+            <div class="asset-info d-flex align-items-center">
+                <div class="symbol-box me-3">{{ stock.symbol[:2] }}</div>
+                <div class="d-flex flex-column overflow-hidden">
+                    <span class="fw-bold text-dark lh-1 text-truncate">{{ stock.symbol }}</span>
+                    <span class="text-muted tiny-text mt-1 text-uppercase text-truncate">{{ stock.name }}</span>
+                </div>
+            </div>
+
+            <div class="pulse-container {{ 'pos' if stock.price_change >= 0 else 'neg' }}">
+                <span class="indicator"></span>
+                <span class="score-value">{{"+" if stock.price_change > 0 }}{{ stock.price_change }}%</span>
+            </div>
+        </a>
+    {% endfor %}
+    {% endif %}
+</div>
+
+<div id="infinite-scroll-trigger" style="height: 50px;"></div>
+{% endblock %}
