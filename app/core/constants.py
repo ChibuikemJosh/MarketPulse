@@ -1,0 +1,7 @@
+# Core constants for the MarketPulse application
+
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+CLICK_BATCH_SIZE = 10
+CLICK_LOOKBACK_DAYS = 30
+CLICK_DECAY_FACTOR = 0.8
+TRENDING_SCORE_SCALE = 100

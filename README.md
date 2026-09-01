@@ -31,7 +31,7 @@ MarketPulse features a **Dual-Core AI Strategy** to provide context-aware financ
 * **Reasoning Engine:** Google Gemini 1.5 Flash (API)
 * **Financial Data:** Finnhub API (News & Sentiment), yfinance (Historical Price)
 * **Market Monitoring:** TradingView Screener API
-* **Backend:** Python (Flask) & SQLite (Personalized Click-stream Data)
+* **Backend:** Python (FastAPI) & SQLite (Personalized Click-stream Data)
 * **Frontend:** JavaScript (AJAX/Fetch for non-blocking AI chat) & Chart.js
 
 ---

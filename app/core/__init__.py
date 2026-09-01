@@ -1,0 +1,1 @@
+"Stores core components for server startup such as constants, config, security, and logging. This package is imported by the server startup script to initialize the server environment."

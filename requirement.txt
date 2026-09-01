@@ -1,6 +1,8 @@
 # Web Framework
-flask
-flask-login
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
 python-dotenv
 werkzeug
 dotenv
@@ -19,3 +21,10 @@ scikit-learn
 # Search & Utilities
 rapidfuzz
 requests
+
+#Caching
+redis
+
+#Database & Models
+sqlalchemy
+alembic
