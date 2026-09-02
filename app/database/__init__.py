@@ -1,0 +1,1 @@
+"Database module for the MarketPulse application."

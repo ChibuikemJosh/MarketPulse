@@ -12,12 +12,13 @@ import app.cache.keys as keys
 
 logger = logging.getLogger(__name__)
 
-class Redis:
+class RedisService:
     def __init__(self, redis_url : str = config.REDIS_URL):
         """
         Initializes the Redis client. 
         The client automatically manages an underlying connection pool.
         """
+        
         self.redis: aioredis.Redis = aioredis.from_url(
             redis_url, 
             decode_responses=True,  # Automatically decodes bytes to strings
@@ -99,12 +100,11 @@ class Redis:
 
     def get_queue_lock(self, lock_name: str = "lock:click:queue", timeout: float = config.REDIS_QUEUE_LOCK_TIMEOUT) -> Lock:
         """Returns a distributed queue lock."""
-        return Locks.get_queue_lock(self, lock_name=lock_name, timeout=timeout)
+        return Locks.get_queue_lock(self.redis)
 
     def get_cache_lock(self, lock_name: str = "lock:global:cache", timeout: float = config.REDIS_CACHE_LOCK_TIMEOUT) -> Lock:
         """
         Returns a distributed cache lock instance.
         Ensures multi-step operations on specific cache fields are mutually exclusive.
         """
-        return Locks.get_cache_lock(self, lock_name=lock_name, timeout=timeout)
-    
+        return Locks.get_cache_lock(self.redis)
