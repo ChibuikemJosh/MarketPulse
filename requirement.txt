@@ -21,6 +21,7 @@ scikit-learn
 # Search & Utilities
 rapidfuzz
 requests
+httpx
 
 #Caching
 redis

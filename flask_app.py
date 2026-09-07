@@ -172,7 +172,7 @@ def get_db_connection():
 init_db()
 
 
-def get_user_weights(user_id):
+def load_user_weights(user_id):
     """Retrieve personalized symbol weights for a user based on their click history.
     Uses exponential decay: recent clicks weigh more than old clicks.
     Caches results to avoid repeated database queries.
@@ -745,7 +745,7 @@ def register():
         # Automatically log in the new user
         session["user_id"] = user_id
         # Pre-load user's click weights from database
-        get_user_weights(user_id)
+        load_user_weights(user_id)
 
         flash("Registered!")
         return redirect("/")
@@ -793,7 +793,7 @@ def search_suggest():
 
     else:
         # Authenticated user: load from database
-        user_weights = get_user_weights(user_id)
+        user_weights = load_user_weights(user_id)
 
     # Ensure symbols in user_weights have entries in trending/name caches
     for symbol in user_weights.keys():

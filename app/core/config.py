@@ -14,6 +14,19 @@ SECRET_KEY = getenv("SECRET_KEY") or ""
 ALPHA_VANTAGE_API_KEY = getenv("ALPHA_VANTAGE_API_KEY") or ""
 FINNHUB_API_KEY = getenv("FINNHUB_API_KEY") or ""
 GEMINI_API_KEY = getenv("GEMINI_API_KEY") or ""
+MASSIVE_API_KEY = getenv("MASSIVE_API_KEY") or getenv("POLYGON_API_KEY") or ""
+TIINGO_API_KEY = getenv("TIINGO_API_KEY") or ""
+
+PROVIDER_ENABLED = {
+    "tradingview": True,
+    "yfinance": True,
+    "massive": bool(MASSIVE_API_KEY),
+    "tiingo": bool(TIINGO_API_KEY),
+}
+PROVIDER_TIMEOUT_SECONDS = 10.0
+PROVIDER_RETRY_COUNT = 1
+PROVIDER_CACHE_TTL_SECONDS = 300
+HISTORICAL_CACHE_TTL_SECONDS = 3600
 
 API_LIMITS = {
     "ALPHA_VANTAGE": 25
