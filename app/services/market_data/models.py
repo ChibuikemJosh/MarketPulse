@@ -48,7 +48,7 @@ class Quote:
     symbol: str
     price: float | None
     previous_close: float | None = None
-    change: float | None = None
+    change: float | None  = None
     change_percent: float | None = None
     volume: float | None = None
     as_of: datetime | None = None
@@ -63,7 +63,7 @@ class ProviderFailure:
     message: str
     retryable: bool = False
     status_code: int | None = None
-    occurred_at: datetime = field(default_factory=datetime.utcnow)
+    occurred_at: datetime = field(default_factory=datetime.timezone.utc)
     details: dict[str, Any] = field(default_factory=dict)
 
 

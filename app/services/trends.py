@@ -34,6 +34,8 @@ def calculate_price_change(symbol: str) -> float:
         return 0.0
 
 
+
+
 async def refresh_market_cache_once(redis: RedisService) -> None:
     """Refresh trends and fallback display names for configured symbols.
 

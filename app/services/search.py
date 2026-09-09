@@ -17,13 +17,13 @@ from app.core.constants import (
     FINAL_THRESHOLD,
     FUZZ_THRESHOLD,
     JUNK_SUFFIXES,
+    SEARCH_RESULT_LIMIT,
 )
 from app.services.alpha_vantage import fetch_symbol_matches
 from app.services.market_data.models import Instrument
 from app.services.market_data.normalization import load_instrument_registry, resolve_instrument
 
 logger = logging.getLogger(__name__)
-SEARCH_RESULT_LIMIT = 5
 
 
 def clean_stock_name(raw_name: str | None) -> str:
