@@ -7,10 +7,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def init_db():
     try:
         with get_db_connection() as conn:
-
             # Create users table for authentication and user identification
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS users (
@@ -45,6 +45,7 @@ def init_db():
                     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
                 )
             ''')
+            
             conn.execute('CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlists(user_id)')
 
             logger.info("Database initialized successfully at %s", DB_PATH)
