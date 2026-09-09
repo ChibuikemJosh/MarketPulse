@@ -5,11 +5,11 @@ import logging
 from datetime import datetime
 
 from app.cache.redis import RedisService
+from app.core.config import CLICK_BATCH_SIZE
 from app.database.repositories.clicks import insert_clicks
 from app.models.click import ClickRecord
 
 logger = logging.getLogger(__name__)
-CLICK_BATCH_SIZE = 10
 
 
 async def record_click(symbol: str, user_id: str | int | None, redis: RedisService) -> None:
@@ -66,4 +66,6 @@ async def flush_click_queue(redis: RedisService) -> int:
                 ))
             except (KeyError, TypeError, ValueError, json.JSONDecodeError):
                 logger.warning("Skipping malformed click queue item")
-    return insert_clicks(records)
+    if records:
+        return insert_clicks(records)
+    return 0
