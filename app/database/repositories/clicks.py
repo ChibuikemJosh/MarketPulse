@@ -28,7 +28,9 @@ def insert_clicks(records: Iterable[ClickRecord]) -> int:
         (record.symbol, record.user_id, record.timestamp.strftime(TIME_FORMAT))
         for record in records
     ]
+    
     if not values:
+        logger.error("Invalid record values", exc_info=True)
         return 0
 
     try:
@@ -38,7 +40,9 @@ def insert_clicks(records: Iterable[ClickRecord]) -> int:
                 values,
             )
             connection.commit()
+
         return len(values)
+
     except Exception:
         logger.error("Failed to persist %d click records", len(values), exc_info=True)
         raise
@@ -61,13 +65,16 @@ def get_clicks_since(since: datetime, user_id: Optional[str] = None) -> list[tup
                     "SELECT symbol, timestamp FROM clicks WHERE timestamp > ?",
                     (since.strftime(TIME_FORMAT),),
                 ).fetchall()
+
             else:
                 rows = connection.execute(
                     "SELECT symbol, timestamp FROM clicks "
                     "WHERE user_id = ? AND timestamp > ?",
                     (user_id, since.strftime(TIME_FORMAT)),
                 ).fetchall()
+
         return [(row["symbol"], row["timestamp"]) for row in rows]
+
     except Exception:
         logger.error("Failed to load click history", exc_info=True)
         raise
