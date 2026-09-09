@@ -3,6 +3,7 @@
 ANONYMOUS_USER_ID = None
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATE_FORMAT = "%Y-%m-%d"
 
 CLICK_BATCH_SIZE = 10
 CLICK_LOOKBACK_DAYS = 30
@@ -15,6 +16,7 @@ TRENDING_SCORE_SCALE = 100
 ALPHAVANTAGE_DEFAULT_SCORE = 50
 
 REFRESH_SECONDS = 600
+SEARCH_RESULT_LIMIT = 5
 
 JUNK_SUFFIXES = (
     " Corporation", " Corp", " Inc.", " Inc", " Ltd.", " Ltd", " Limited",
