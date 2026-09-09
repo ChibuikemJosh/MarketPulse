@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 CONFIG_DIR = Path(__file__).resolve().parent
 
+
 def load_brand_map():
     path = CONFIG_DIR / 'brand_config.json'
 
