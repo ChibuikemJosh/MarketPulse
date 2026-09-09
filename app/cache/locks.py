@@ -4,6 +4,7 @@ from redis.asyncio.lock import Lock
 from app.core.config import REDIS_QUEUE_LOCK_TIMEOUT, REDIS_CACHE_LOCK_TIMEOUT
 from app.cache.keys import CLICK_QUEUE_LOCK, GLOBAL_CACHE_LOCK
 
+
 def get_queue_lock(
     redis: RedisClient,
     lock_name: str = CLICK_QUEUE_LOCK,

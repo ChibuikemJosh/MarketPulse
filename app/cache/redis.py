@@ -8,9 +8,11 @@ from redis.asyncio.lock import Lock
 
 import app.cache.locks as Locks
 import app.core.config as config
+import app.core.constants as constants
 import app.cache.keys as keys
 
 logger = logging.getLogger(__name__)
+
 
 class RedisService:
     def __init__(self, redis_url : str = config.REDIS_URL):
@@ -39,6 +41,7 @@ class RedisService:
     # --- 1. GLOBAL WEIGHT CACHE (Hash) ---
     async def get_global_weight(self, symbol: str) -> Optional[float]:
         val = await self.redis.hget(self.KEY_GLOBAL_WEIGHT, symbol.upper())
+
         return float(val) if val is not None else None
 
     async def set_global_weight(self, symbol: str, weight: float):
@@ -47,17 +50,20 @@ class RedisService:
     async def get_global_weights(self) -> dict[str, float]:
         """Return every cached global symbol weight."""
         values = await self.redis.hgetall(self.KEY_GLOBAL_WEIGHT)
+
         return {symbol: float(weight) for symbol, weight in values.items()}
 
     async def set_global_weights(self, weights: dict[str, float]) -> None:
         """Replace the global weight hash with the supplied values."""
         async with self.redis.pipeline(transaction=True) as pipeline:
             await pipeline.delete(self.KEY_GLOBAL_WEIGHT)
+
             if weights:
                 await pipeline.hset(
                     self.KEY_GLOBAL_WEIGHT,
                     mapping={symbol.upper(): str(weight) for symbol, weight in weights.items()},
                 )
+
             await pipeline.execute()
 
     # --- 2. USER WEIGHT CACHE (Dynamic Hashes) ---
@@ -67,15 +73,19 @@ class RedisService:
     async def get_user_weight(self, user_id: str, symbol: str) -> Optional[float]:
         key = self._user_weight_key(user_id)
         val = await self.redis.hget(key, symbol.upper())
+
         return float(val) if val is not None else None
 
     async def set_user_weight(self, user_id: str, symbol: str, weight: float):
+        "Set user weight cache for one user for a specific symbol"
         key = self._user_weight_key(user_id)
+
         await self.redis.hset(key, symbol.upper(), str(weight))
 
     async def get_user_weights(self, user_id: str) -> dict[str, float]:
         """Return every cached weight for one user."""
         values = await self.redis.hgetall(self._user_weight_key(user_id))
+
         return {symbol: float(weight) for symbol, weight in values.items()}
 
     # --- 3. TRENDING SCORES & CACHED NAMES (Hashes) ---
@@ -84,6 +94,7 @@ class RedisService:
 
     async def get_trending_score(self, symbol: str) -> Optional[float]:
         val = await self.redis.hget(self.KEY_TRENDING_SCORES, symbol.upper())
+
         return float(val) if val is not None else None
 
     async def get_cached_name(self, symbol: str) -> Optional[str]:
@@ -95,6 +106,7 @@ class RedisService:
     async def get_trending_scores(self) -> dict[str, float]:
         """Return all cached price-change scores."""
         values = await self.redis.hgetall(self.KEY_TRENDING_SCORES)
+
         return {symbol: float(change) for symbol, change in values.items()}
 
     async def get_cached_names(self) -> dict[str, str]:
@@ -105,22 +117,26 @@ class RedisService:
         """Replace the trending score hash with the supplied values."""
         async with self.redis.pipeline(transaction=True) as pipeline:
             await pipeline.delete(self.KEY_TRENDING_SCORES)
+
             if scores:
                 await pipeline.hset(
                     self.KEY_TRENDING_SCORES,
                     mapping={symbol.upper(): str(change) for symbol, change in scores.items()},
                 )
+
             await pipeline.execute()
 
     async def set_cached_names(self, names: dict[str, str]) -> None:
         """Replace the cached names hash with the supplied values."""
         async with self.redis.pipeline(transaction=True) as pipeline:
             await pipeline.delete(self.KEY_CACHED_NAMES)
+
             if names:
                 await pipeline.hset(
                     self.KEY_CACHED_NAMES,
                     mapping={symbol.upper(): clean_name for symbol, clean_name in names.items()},
                 )
+
             await pipeline.execute()
 
     # --- 4. ATOMIC STATS CACHE (String Counter with Dynamic Date) ---
@@ -129,7 +145,7 @@ class RedisService:
         Increments daily calls atomically. 
         Uses the format: api:stats:alpha_vantage:calls:YYYY-MM-DD
         """
-        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_str = datetime.now().strftime(constants.DATE_FORMAT)
         key = keys.API_STATS.format(today_str=today_str)  # Using the centralized key from keys.py
         
         # Increment atomically
@@ -137,14 +153,15 @@ class RedisService:
         
         # If it's a new key (count == 1), set a 24-hour TTL to self-clean old dates
         if count == 1:
-            await self.redis.expire(key, 86400) 
+            await self.redis.expire(key, config.ALPHAVANTAGE_RATE_LIMIT_TTL_SECONDS) 
             
         return count
 
     async def get_alpha_vantage_calls(self) -> int:
         """Return today's Alpha Vantage call count without incrementing it."""
-        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_str = datetime.now().strftime(constants.DATE_FORMAT)
         value = await self.redis.get(keys.API_STATS.format(today_str=today_str))
+
         return int(value) if value is not None else 0
 
     # --- 5. DOUBLE-ENDED QUEUE (List) ---
