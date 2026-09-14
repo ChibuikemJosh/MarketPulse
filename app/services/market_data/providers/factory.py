@@ -8,12 +8,12 @@ from app.services.market_data.providers.tradingview import TradingViewProvider
 from app.services.market_data.providers.yfinance import YFinanceProvider
 
 
-def build_default_providers() -> list[MarketDataProvider]:
+def build_default_providers(redis=None) -> list[MarketDataProvider]:
     """Build providers in the requested historical/live fallback order."""
     candidates: dict[str, MarketDataProvider] = {
         "tradingview": TradingViewProvider(),
         "yfinance": YFinanceProvider(),
-        "massive": MassiveProvider(),
-        "tiingo": TiingoProvider(),
+        "massive": MassiveProvider(redis=redis),
+        "tiingo": TiingoProvider(redis=redis),
     }
     return [provider for name, provider in candidates.items() if config.PROVIDER_ENABLED.get(name, False)]

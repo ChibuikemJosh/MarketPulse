@@ -18,12 +18,17 @@ class TiingoProvider(MarketDataProvider):
     name = "tiingo"
     base_url = "https://api.tiingo.com"
 
-    def __init__(self, api_key: str = config.TIINGO_API_KEY):
+    def __init__(self, api_key: str = config.TIINGO_API_KEY, redis=None):
         self.api_key = api_key
+        self.redis = redis
 
     async def historical_candles(self, instrument, start: date, end: date, interval: str):
         if not self.api_key:
             return ProviderFailure(self.name, "historical_candles", "Provider is disabled", retryable=False)
+        if self.redis is not None:
+            period = datetime.now(timezone.utc).strftime("%Y%m%d")
+            if not await self.redis.reserve_provider_quota(self.name, period, 500, 86400):
+                return ProviderFailure(self.name, "historical_candles", "Tiingo request quota exhausted", retryable=False, status_code=429)
         if interval not in {"1d", "1wk", "1mo"}:
             return ProviderFailure(self.name, "historical_candles", "Tiingo adapter supports daily intervals only", retryable=False)
         url = f"{self.base_url}/tiingo/daily/{instrument.provider_symbol(self.name)}/prices"

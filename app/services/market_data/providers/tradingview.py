@@ -34,7 +34,7 @@ class TradingViewProvider(MarketDataProvider):
         return ProviderFailure(self.name, "historical_candles", "Screener does not provide historical candle downloads", retryable=False)
 
     async def quote(self, instrument: Instrument):
-        market = instrument.provider_symbols.get("tradingview_market") or _market_from_exchange(instrument.exchange)
+        market = instrument.market or _market_from_exchange(instrument.exchange)
         ticker = instrument.provider_symbol(self.name)
         if not market:
             return ProviderFailure(self.name, "quote", "No TradingView market mapping", retryable=False)

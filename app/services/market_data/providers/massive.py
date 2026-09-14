@@ -18,12 +18,18 @@ class MassiveProvider(MarketDataProvider):
     name = "massive"
     base_url = "https://api.massive.com"
 
-    def __init__(self, api_key: str = config.MASSIVE_API_KEY):
+    def __init__(self, api_key: str = config.MASSIVE_API_KEY, redis=None):
         self.api_key = api_key
+        self.redis = redis
 
     async def historical_candles(self, instrument, start: date, end: date, interval: str):
         if not self.api_key:
             return ProviderFailure(self.name, "historical_candles", "Provider is disabled", retryable=False)
+        period = datetime.now(timezone.utc).strftime("%Y%m%d%H%M")
+        if hasattr(self, "redis") and self.redis is not None:
+            allowed = await self.redis.reserve_provider_quota(self.name, period, 5, 60)
+            if not allowed:
+                return ProviderFailure(self.name, "historical_candles", "Massive request quota exhausted", retryable=False, status_code=429)
         multiplier, timespan = _interval(interval)
         url = f"{self.base_url}/v2/aggs/ticker/{instrument.provider_symbol(self.name)}/range/{multiplier}/{timespan}/{start}/{end}"
         try:
