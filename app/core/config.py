@@ -5,7 +5,7 @@ from os import getenv
 
 load_dotenv()
 
-REDIS_URL = getenv("REDIS_URL") or "redis://localhost:6379"
+REDIS_URL = getenv("REDIS_URL") or "redis://default:S0GTIzAb5QXdpp9UBgsNf1G2QM2dBIHx@cave-brownish-bulb-54742.db.redis.io:17453"
 
 DATABASE_URL = getenv("DATABASE_URL") or "sqlite:///./marketpulse.db"
 DB_PATH = DATABASE_URL.replace("sqlite:///", "")  # Extract the file path from the DATABASE_URL
@@ -28,6 +28,13 @@ PROVIDER_RETRY_COUNT = 5
 ALPHAVANTAGE_RATE_LIMIT_TTL_SECONDS = 86400
 PROVIDER_CACHE_TTL_SECONDS = 300
 HISTORICAL_CACHE_TTL_SECONDS = 3600
+PROVIDER_CIRCUIT_BREAKER_SECONDS = 30
+MARKET_REFRESH_LOCK_SECONDS = 540
+MARKET_REFRESH_CONCURRENCY = 8
+PROVIDER_RATE_LIMITS = {
+    "alpha_vantage_daily": 25,
+    "massive_per_minute": 5,
+}
 
 API_LIMITS = {
     "ALPHA_VANTAGE": 25
