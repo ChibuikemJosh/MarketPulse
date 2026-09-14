@@ -12,7 +12,7 @@ from app.services.clicks import flush_click_queue
 from app.services.trends import refresh_market_cache
 from app.services.market_data.orchestrator import MarketDataOrchestrator
 from app.services.market_data.providers.factory import build_default_providers
-from app.routers import clicks, data, market, pages, search, watchlists
+from app.routers import clicks, data, market, news, pages, search, watchlists
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 
     redis_service = RedisService()
     app.state.redis = redis_service
-    app.state.market_data = MarketDataOrchestrator(build_default_providers(), redis=redis_service)
+    app.state.market_data = MarketDataOrchestrator(build_default_providers(redis_service), redis=redis_service)
     refresh_task = asyncio.create_task(refresh_market_cache(redis_service))
     yield
 
@@ -46,6 +46,7 @@ app.include_router(market.router)
 app.include_router(clicks.router)
 app.include_router(watchlists.router)
 app.include_router(data.router)
+app.include_router(news.router)
 
 @app.get("/health", tags=["Health Check"])
 async def health():
