@@ -11,7 +11,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22 fill=%22%230d6efd%22>📈</text></svg>">
 
     {% block head %}{% endblock %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
             <div class="d-none d-md-flex me-4">
                 <a href="/" class="text-decoration-none small fw-semibold opacity-75">Dashboard</a>
             </div>
-            {% if not current_user.is_authenticated %}
+            {% if not user_authenticated %}
                 <a href="/login" class="nav-signup-btn btn btn-primary btn-sm rounded-pill px-4 fw-bold">Sign In</a>
             {% endif %}
         </div>
@@ -108,7 +108,7 @@ async function recordClick(symbol) {
 
     if (sessionClicks >= 5) {
         try {
-            await fetch('/record_click', {
+            await fetch('/api/clicks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ symbol: symbol }),
@@ -137,18 +137,11 @@ if (searchInput) {
 
             try {
                 // Send weights in POST body to avoid long URLs
-                const response = await fetch('/search_suggest', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        q: query,
-                        history: JSON.parse(localStorage.getItem('user_click_history') || '{}') // Send history
-                    })
-                });
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
                 const data = await response.json();
 
                 if (data.length > 0) {
-                    suggestionsBox.innerHTML = '';
+                    suggestionsBox.replaceChildren();
                     data.forEach(item => {
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
@@ -256,18 +249,30 @@ async function syncDashboard() {
             const posNeg = stock.price_change >= 0 ? 'pos' : 'neg';
             const sign = stock.price_change > 0 ? '+' : '';
 
-            row.innerHTML = `
-                <div class="asset-info d-flex align-items-center">
-                    <div class="symbol-box me-3">${stock.symbol.substring(0, 2)}</div>
-                    <div class="d-flex flex-column overflow-hidden">
-                        <span class="fw-bold text-dark lh-1 text-truncate">${stock.symbol}</span>
-                        <span class="text-muted tiny-text mt-1 text-uppercase text-truncate">${stock.name}</span>
-                    </div>
-                </div>
-                <div class="pulse-container ${posNeg}">
-                    <span class="indicator"></span>
-                    <span class="score-value">${sign}${stock.price_change}%</span>
-                </div>`;
+            const assetInfo = document.createElement('div');
+            assetInfo.className = 'asset-info d-flex align-items-center';
+            const symbolBox = document.createElement('div');
+            symbolBox.className = 'symbol-box me-3';
+            symbolBox.textContent = stock.symbol.substring(0, 2);
+            const details = document.createElement('div');
+            details.className = 'd-flex flex-column overflow-hidden';
+            const symbolText = document.createElement('span');
+            symbolText.className = 'fw-bold text-dark lh-1 text-truncate';
+            symbolText.textContent = stock.symbol;
+            const nameText = document.createElement('span');
+            nameText.className = 'text-muted tiny-text mt-1 text-uppercase text-truncate';
+            nameText.textContent = stock.name;
+            details.append(symbolText, nameText);
+            assetInfo.append(symbolBox, details);
+            const pulse = document.createElement('div');
+            pulse.className = `pulse-container ${posNeg}`;
+            const indicator = document.createElement('span');
+            indicator.className = 'indicator';
+            const value = document.createElement('span');
+            value.className = 'score-value';
+            value.textContent = `${sign}${stock.price_change}%`;
+            pulse.append(indicator, value);
+            row.append(assetInfo, pulse);
             stockContainer.appendChild(row);
         });
 
@@ -276,9 +281,13 @@ async function syncDashboard() {
         data.news.forEach(item => {
             const newsItem = document.createElement('div');
             newsItem.className = 'news-item mb-3 border-bottom pb-2 fade-in-row';
-            newsItem.innerHTML = `
-                <small class="text-primary fw-bold">${item.source}</small>
-                <h6 class="mb-1 small fw-bold">${item.headline}</h6>`;
+            const source = document.createElement('small');
+            source.className = 'text-primary fw-bold';
+            source.textContent = item.source || '';
+            const headline = document.createElement('h6');
+            headline.className = 'mb-1 small fw-bold';
+            headline.textContent = item.headline || '';
+            newsItem.append(source, headline);
             newsContainer.appendChild(newsItem);
         });
 

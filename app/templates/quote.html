@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% block title %}{{ symbol }} Quote{% endblock %}
+{% block content %}
+<section class="quote-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h4 mb-1">{{ symbol }}</h1>
+            <p class="text-muted small mb-0">Market data with provider fallback.</p>
+        </div>
+        <div class="btn-group" role="group" aria-label="Chart mode">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-chart-mode="line">Line</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-chart-mode="candle">Candles</button>
+        </div>
+    </div>
+    <div id="tradingview_chart" style="height: 520px; width: 100%;"></div>
+    <div id="fallback-chart-status" class="small text-muted mt-2" aria-live="polite"></div>
+</section>
+<script>
+const chartSymbol = {{ tradingview_symbol|tojson }};
+const canonicalSymbol = {{ symbol|tojson }};
+const chartStatus = document.getElementById('fallback-chart-status');
+let chartMode = 'line';
+
+function loadTradingViewWidget() {
+    const container = document.getElementById('tradingview_chart');
+    container.replaceChildren();
+    const widget = document.createElement('div');
+    widget.className = 'tradingview-widget-container__widget';
+    container.appendChild(widget);
+    const config = document.createElement('script');
+    config.type = 'text/javascript';
+    config.text = JSON.stringify({autosize: true, symbol: chartSymbol, interval: 'D', timezone: 'Etc/UTC', theme: 'light', style: '1', locale: 'en', hide_side_toolbar: true, allow_symbol_change: false});
+    container.appendChild(config);
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+    script.async = true;
+    script.onerror = () => loadFallbackGraph();
+    container.appendChild(script);
+}
+
+async function loadFallbackGraph() {
+    chartStatus.textContent = 'TradingView chart unavailable. Loading normalized fallback data.';
+    const response = await fetch(`/api/graph/${encodeURIComponent(canonicalSymbol)}?mode=${chartMode}`);
+    const payload = await response.json();
+    if (payload.status === 'error') {
+        chartStatus.textContent = 'Fallback market data is currently unavailable.';
+        return;
+    }
+    chartStatus.textContent = `${payload.points.length} normalized ${chartMode} points available from the backend.`;
+}
+
+document.querySelectorAll('[data-chart-mode]').forEach(button => {
+    button.addEventListener('click', () => {
+        chartMode = button.dataset.chartMode;
+        loadFallbackGraph();
+    });
+});
+loadTradingViewWidget();
+</script>
+{% endblock %}
