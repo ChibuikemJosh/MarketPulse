@@ -14,7 +14,7 @@ def test_provider_symbol_mapping_preserves_exchange_identity():
     registry = load_instrument_registry()
     brk = registry["BRK-B"]
     assert brk.symbol == "BRK-B"
-    assert brk.provider_symbol("tradingview") == "BRK.B"
+    assert brk.provider_symbol("tradingview") == "NYSE:BRK.B"
     assert brk.provider_symbol("yfinance") == "BRK-B"
     assert resolve_instrument("NASDAQ:AAPL", registry).symbol == "AAPL"
     assert tradingview_chart_symbol(registry["AAPL"]) == "NASDAQ:AAPL"

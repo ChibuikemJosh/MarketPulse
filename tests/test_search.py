@@ -31,18 +31,26 @@ class FakeRedis:
     async def get_trending_score(self, symbol):
         return 0.0
 
+    async def reserve_provider_quota(self, provider, period, limit, ttl):
+        return True
+
 
 @pytest.mark.asyncio
 async def test_async_search_returns_local_results(monkeypatch):
     registry = {"AAPL": Instrument("AAPL", exchange="US", display_name="Apple")}
     monkeypatch.setattr(search, "load_instrument_registry", lambda: registry)
     monkeypatch.setattr(search, "load_brand_map", lambda: {"AAPL": ["Apple"]})
+    monkeypatch.setattr(search, "fetch_symbol_matches", lambda query, redis: _empty_matches())
 
     results = await search.search_symbols("apple", FakeRedis())
 
     assert results[0]["symbol"] == "AAPL"
     assert results[0]["instrument_id"] == "STOCK:US:AAPL"
     assert "score" not in results[0]
+
+
+async def _empty_matches():
+    return []
 
 
 @pytest.mark.asyncio
