@@ -17,24 +17,29 @@ logger = logging.getLogger(__name__)
 
 
 class RedisService:
-    def __init__(self, redis_url : str = config.REDIS_URL):
+    def __init__(self, redis_url: str = config.REDIS_URL):
         """
         Initializes the Redis client. 
         The client automatically manages an underlying connection pool.
         """
         
+        # ADDED: Timeout and health check parameters to prevent cloud connection drops
         self.redis: aioredis.Redis = aioredis.from_url(
             redis_url,
             decode_responses=True,  # Automatically decodes bytes to strings
-            max_connections=config.REDIS_MAX_CONNECTIONS      # Tweak based on server scaling
+            max_connections=config.REDIS_MAX_CONNECTIONS,  # Tweak based on server scaling
+            socket_timeout=10.0,
+            socket_connect_timeout=10.0,
+            retry_on_timeout=True,
+            health_check_interval=30
         )
         
         # Redis Key Namespaces
-        self.KEY_GLOBAL_WEIGHT = keys.GLOBAL_WEIGHTS  # Using the centralized key from keys.py
-        self.KEY_TRENDING_SCORES = keys.TRENDING  # Using the centralized key from keys.py
+        self.KEY_GLOBAL_WEIGHT = keys.GLOBAL_WEIGHTS
+        self.KEY_TRENDING_SCORES = keys.TRENDING
         self.KEY_TRENDING_METADATA = keys.TRENDING_METADATA
-        self.KEY_CACHED_NAMES = keys.CACHED_NAMES  # Using the centralized key from keys.py
-        self.KEY_CLICK_QUEUE = keys.CLICK_QUEUE  # Using the centralized key from keys.py
+        self.KEY_CACHED_NAMES = keys.CACHED_NAMES
+        self.KEY_CLICK_QUEUE = keys.CLICK_QUEUE
 
     async def close(self):
         """ Call this during application shutdown to gracefully clear the pool."""
@@ -44,7 +49,6 @@ class RedisService:
     # --- 1. GLOBAL WEIGHT CACHE (Hash) ---
     async def get_global_weight(self, symbol: str) -> Optional[float]:
         val = await self.redis.hget(self.KEY_GLOBAL_WEIGHT, symbol.upper())
-
         return float(val) if val is not None else None
 
     async def set_global_weight(self, symbol: str, weight: float):
@@ -53,7 +57,6 @@ class RedisService:
     async def get_global_weights(self) -> dict[str, float]:
         """Return every cached global symbol weight."""
         values = await self.redis.hgetall(self.KEY_GLOBAL_WEIGHT)
-
         return {symbol: float(weight) for symbol, weight in values.items()}
 
     async def set_global_weights(self, weights: dict[str, float]) -> None:
@@ -71,26 +74,36 @@ class RedisService:
 
     # --- 2. USER WEIGHT CACHE (Dynamic Hashes) ---
     def _user_weight_key(self, user_id: str) -> str:
-        return keys.USER_WEIGHTS.format(user_id=user_id)  # Using the centralized key from keys.py
+        return keys.USER_WEIGHTS.format(user_id=user_id)
 
     async def get_user_weight(self, user_id: str, symbol: str) -> Optional[float]:
         key = self._user_weight_key(user_id)
         val = await self.redis.hget(key, symbol.upper())
-
         return float(val) if val is not None else None
 
     async def set_user_weight(self, user_id: str, symbol: str, weight: float):
         "Set user weight cache for one user for a specific symbol"
         key = self._user_weight_key(user_id)
-
         await self.redis.hset(key, symbol.upper(), str(weight))
 
     async def get_user_weights(self, user_id: str) -> dict[str, float]:
         """Return every cached weight for one user."""
         values = await self.redis.hgetall(self._user_weight_key(user_id))
-
         return {symbol: float(weight) for symbol, weight in values.items()}
 
+    async def set_user_weights(self, user_id: str, weights: dict[str, float]):
+        """Replace the user weight hash with the supplied values."""
+        async with self.redis.pipeline(transaction=True) as pipeline:
+            key = self._user_weight_key(user_id)
+            await pipeline.delete(key)
+            if weights:
+                await pipeline.hset(
+                    self.KEY_GLOBAL_WEIGHT,
+                    mapping={symbol.upper(): str(weight) for symbol, weight in weights.items()},
+                )
+
+            await pipeline.execute()
+     
     # --- 3. TRENDING SCORES & CACHED NAMES (Hashes) ---
     async def update_trending_score(self, symbol: str, change_pct: float):
         await self.redis.hset(self.KEY_TRENDING_SCORES, symbol.upper(), str(change_pct))
@@ -98,6 +111,16 @@ class RedisService:
     async def update_trending_metadata(self, symbol: str, metadata: dict[str, Any]) -> None:
         """Store provider and freshness details for one trend value."""
         await self.redis.hset(self.KEY_TRENDING_METADATA, symbol.upper(), json.dumps(metadata, default=str))
+
+    # ADDED: Batch update method for trending metadata
+    async def update_all_trending_metadata(self, metadata_dict: dict[str, Any]) -> None:
+        """Store multiple provider and freshness details in a single network trip."""
+        if not metadata_dict:
+            return
+        formatted_data = {
+            k.upper(): json.dumps(v, default=str) for k, v in metadata_dict.items()
+        }
+        await self.redis.hset(self.KEY_TRENDING_METADATA, mapping=formatted_data)
 
     async def get_trending_metadata(self, symbol: str) -> dict[str, Any] | None:
         """Read provider and freshness details for one trend value."""
@@ -111,7 +134,6 @@ class RedisService:
 
     async def get_trending_score(self, symbol: str) -> Optional[float]:
         val = await self.redis.hget(self.KEY_TRENDING_SCORES, symbol.upper())
-
         return float(val) if val is not None else None
 
     async def get_cached_name(self, symbol: str) -> Optional[str]:
@@ -123,7 +145,6 @@ class RedisService:
     async def get_trending_scores(self) -> dict[str, float]:
         """Return all cached price-change scores."""
         values = await self.redis.hgetall(self.KEY_TRENDING_SCORES)
-
         return {symbol: float(change) for symbol, change in values.items()}
 
     async def get_cached_names(self) -> dict[str, str]:
@@ -163,7 +184,7 @@ class RedisService:
         Uses the format: api:stats:alpha_vantage:calls:YYYY-MM-DD
         """
         today_str = datetime.now().strftime(constants.DATE_FORMAT)
-        key = keys.API_STATS.format(today_str=today_str)  # Using the centralized key from keys.py
+        key = keys.API_STATS.format(today_str=today_str)
         
         # Increment atomically
         count = await self.redis.incr(key)
@@ -178,7 +199,6 @@ class RedisService:
         """Return today's Alpha Vantage call count without incrementing it."""
         today_str = datetime.now().strftime(constants.DATE_FORMAT)
         value = await self.redis.get(keys.API_STATS.format(today_str=today_str))
-
         return int(value) if value is not None else 0
 
     # --- 5. DOUBLE-ENDED QUEUE (List) ---
@@ -195,7 +215,6 @@ class RedisService:
             lock_name: str = keys.CLICK_QUEUE_LOCK,
             timeout: float = config.REDIS_QUEUE_LOCK_TIMEOUT,
         ) -> Lock:
-
         return Locks.get_queue_lock(self.redis, lock_name=lock_name, timeout=timeout)
 
     def get_cache_lock(
@@ -203,7 +222,6 @@ class RedisService:
         lock_name: str = keys.CLICK_CACHE_LOCK,
         timeout: float = config.REDIS_CACHE_LOCK_TIMEOUT,
     ) -> Lock:
-
         return Locks.get_cache_lock(self.redis, lock_name=lock_name, timeout=timeout)
 
     def market_cache_key(
@@ -255,17 +273,28 @@ class RedisService:
         result = await self.redis.eval(script, 1, key, limit, ttl)
         return bool(result)
 
-    async def mark_provider_failure(self, provider: str, ttl: int | None = None) -> None:
+    async def mark_provider_failure(self, provider: str, operation: str = "default", ttl: int | None = None) -> None:
         """Open a provider circuit for the configured cooldown period."""
         await self.redis.set(
-            keys.PROVIDER_CIRCUIT.format(provider=provider),
+            keys.PROVIDER_CIRCUIT.format(provider=provider, operation=operation),
             "open",
             ex=ttl or config.PROVIDER_CIRCUIT_BREAKER_SECONDS,
         )
 
-    async def provider_is_open(self, provider: str) -> bool:
+    async def provider_is_open(self, provider: str, operation: str = "default") -> bool:
         """Return whether a provider circuit is currently open."""
-        return await self.redis.exists(keys.PROVIDER_CIRCUIT.format(provider=provider)) == 1
+        key = keys.PROVIDER_CIRCUIT.format(provider=provider, operation=operation)
+        return await self.redis.exists(key) == 1
+
+    async def get_market_failure(self, operation: str, instrument_id: str, provider: str, interval: str = "", start: str = "", end: str = "") -> dict[str, Any] | None:
+        """Read a short-lived provider failure for one exact market request."""
+        key = keys.MARKET_FAILURE.format(operation=operation, instrument_id=instrument_id, provider=provider, interval=interval, start=start, end=end)
+        return await self.get_market_cache(key)
+
+    async def set_market_failure(self, operation: str, instrument_id: str, provider: str, record: dict[str, Any], ttl: int, interval: str = "", start: str = "", end: str = "") -> None:
+        """Cache a structured provider failure without hiding the error source."""
+        key = keys.MARKET_FAILURE.format(operation=operation, instrument_id=instrument_id, provider=provider, interval=interval, start=start, end=end)
+        await self.set_market_cache(key, record, ttl)
 
     def get_refresh_lock(self) -> Lock:
         """Return the distributed lock used by the market refresh worker."""
