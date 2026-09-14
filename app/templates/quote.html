@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h1 class="h4 mb-1">{{ symbol }}</h1>
-            <p class="text-muted small mb-0">Market data with provider fallback.</p>
+            <p class="text-muted small mb-0">{{ instrument.exchange if instrument else 'Unknown exchange' }} · {{ instrument.asset_type if instrument else 'stock' }} · {{ instrument.display_name if instrument else '' }}</p>
         </div>
         <div class="btn-group" role="group" aria-label="Chart mode">
             <button type="button" class="btn btn-outline-secondary btn-sm" data-chart-mode="line">Line</button>
@@ -15,11 +15,27 @@
     <div id="tradingview_chart" style="height: 520px; width: 100%;"></div>
     <div id="fallback-chart-status" class="small text-muted mt-2" aria-live="polite"></div>
 </section>
+<section class="quote-news mt-4" aria-labelledby="quote-news-title">
+    <h2 id="quote-news-title" class="h5">{{ symbol }} news</h2>
+    <div id="instrument-news-list">
+        {% for item in news %}
+        <article class="news-item border-bottom py-3">
+            <small class="text-primary fw-bold">{{ item.source }}</small>
+            <h3 class="h6 mt-1 mb-1">{{ item.headline }}</h3>
+            <p class="small text-muted mb-1">{{ item.summary }}</p>
+            <time class="tiny-text text-muted">{{ item.datetime }}</time>
+        </article>
+        {% endfor %}
+    </div>
+    <button id="load-instrument-news" class="btn btn-sm btn-outline-secondary mt-2" type="button">Load more news</button>
+</section>
 <script>
 const chartSymbol = {{ tradingview_symbol|tojson }};
 const canonicalSymbol = {{ symbol|tojson }};
 const chartStatus = document.getElementById('fallback-chart-status');
 let chartMode = 'line';
+let instrumentNewsOffset = {{ news_next_offset|default(5) }};
+let instrumentNewsHasMore = {{ 'true' if news_has_more|default(false) else 'false' }};
 
 function loadTradingViewWidget() {
     const container = document.getElementById('tradingview_chart');
@@ -54,6 +70,30 @@ document.querySelectorAll('[data-chart-mode]').forEach(button => {
         chartMode = button.dataset.chartMode;
         loadFallbackGraph();
     });
+});
+document.getElementById('load-instrument-news')?.addEventListener('click', async () => {
+    if (!instrumentNewsHasMore) return;
+    const response = await fetch(`/api/news/instrument/${encodeURIComponent(canonicalSymbol)}?offset=${instrumentNewsOffset}`);
+    const data = await response.json();
+    const list = document.getElementById('instrument-news-list');
+    data.items.forEach(item => {
+        const article = document.createElement('article');
+        article.className = 'news-item border-bottom py-3';
+        const source = document.createElement('small');
+        source.className = 'text-primary fw-bold';
+        source.textContent = item.source || '';
+        const title = document.createElement('h3');
+        title.className = 'h6 mt-1 mb-1';
+        title.textContent = item.headline || '';
+        const summary = document.createElement('p');
+        summary.className = 'small text-muted mb-1';
+        summary.textContent = item.summary || '';
+        article.append(source, title, summary);
+        list.appendChild(article);
+    });
+    instrumentNewsOffset = data.next_offset;
+    instrumentNewsHasMore = data.has_more;
+    if (!instrumentNewsHasMore) document.getElementById('load-instrument-news').textContent = 'No more news available';
 });
 loadTradingViewWidget();
 </script>

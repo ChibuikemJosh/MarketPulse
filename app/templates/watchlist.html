@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block title %}Watchlist{% endblock %}
+{% block content %}
+<section aria-labelledby="watchlist-title">
+    <h1 id="watchlist-title" class="h4 mb-1">Watchlist</h1>
+    <p class="text-muted small">Your saved instruments.</p>
+    <div id="watchlist-items" class="list-group"></div>
+    <p id="watchlist-empty" class="text-muted small py-4">Sign in to load your watchlist.</p>
+</section>
+<script>
+async function loadWatchlist() {
+    const response = await fetch('/api/watchlists');
+    if (!response.ok) return;
+    const data = await response.json();
+    const list = document.getElementById('watchlist-items');
+    const empty = document.getElementById('watchlist-empty');
+    list.replaceChildren();
+    empty.hidden = data.symbols.length > 0;
+    data.symbols.forEach(symbol => {
+        const link = document.createElement('a');
+        link.className = 'list-group-item list-group-item-action';
+        link.href = `/quote?symbol=${encodeURIComponent(symbol)}`;
+        link.textContent = symbol;
+        list.appendChild(link);
+    });
+}
+loadWatchlist();
+</script>
+{% endblock %}
