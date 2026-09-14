@@ -238,3 +238,37 @@ form { overflow: visible; }
 .spinner-border.text-primary {
     color: #3b82f6 !important;
 }
+
+.nav-icon-link,
+.mobile-nav-button {
+    color: #dbeafe;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 9px;
+    text-decoration: none;
+}
+.nav-icon-link:hover,
+.mobile-nav-button:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.mobile-news-link { display: flex; gap: 8px; flex-wrap: wrap; }
+
+html.dark-mode body { background: #111827; color: #e5e7eb; }
+html.dark-mode .main-card,
+html.dark-mode .side-card { background: #1f2937; color: #e5e7eb; }
+html.dark-mode .text-dark,
+html.dark-mode .text-muted { color: #cbd5e1 !important; }
+html.dark-mode .trending-row:hover { background: #374151; }
+
+@media (max-width: 767.98px) {
+    .my-header { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+    .my-brand { flex: 0 0 auto; }
+    .text-main, .text-blue { font-size: 1.1rem; }
+    .logo-box { width: 32px; height: 32px; margin-right: 7px; }
+    .my-search-form { order: 3; flex-basis: 100%; margin: 2px 0 0; max-width: none; }
+    .main-card { padding: 18px; border-radius: 12px; }
+    .side-card { display: block !important; order: 2; }
+    .nav-open .side-card { display: block !important; }
+}
