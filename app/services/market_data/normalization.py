@@ -27,7 +27,6 @@ def _provider_symbols(symbol: str, tv_symbol: str, market: str) -> dict[str, str
     massive_symbol = symbol.replace(".", "-")
     return {
         "tradingview": tv_symbol,
-        "tradingview_market": market,
         "yfinance": yfinance_symbol,
         "massive": massive_symbol,
         "tiingo": tiingo_symbol,
@@ -40,14 +39,20 @@ def build_instrument(symbol: str, config: Mapping[str, Any], aliases: list[str] 
     defaults = _MARKET_DEFAULTS.get(market, {})
     tv_symbol = str(config.get("tv_symbol") or symbol)
     exchange = str(config.get("exchange") or defaults.get("exchange") or market.upper() or "GLOBAL")
+    if ":" in tv_symbol:
+        tv_exchange, tv_ticker = tv_symbol.split(":", 1)
+        exchange = str(config.get("exchange") or tv_exchange)
+        tv_symbol = f"{tv_exchange}:{tv_ticker}"
     return Instrument(
         symbol=symbol.upper().strip(),
         exchange=exchange,
         asset_type=str(config.get("asset_type", "stock")),
         currency=config.get("currency") or defaults.get("currency"),
         timezone=config.get("timezone") or defaults.get("timezone"),
+        market=market or None,
         display_name=(aliases or [None])[0],
         provider_symbols=_provider_symbols(symbol.upper().strip(), tv_symbol, market),
+        tradingview_symbol=tv_symbol,
     )
 
 
@@ -79,6 +84,8 @@ def resolve_instrument(raw_symbol: str, registry: dict[str, Instrument] | None =
     if direct:
         return direct
     for instrument in instruments.values():
+        if normalized == (instrument.chart_symbol() or "").upper():
+            return instrument
         if normalized in {value.upper() for value in instrument.provider_symbols.values()}:
             return instrument
     return None
@@ -86,15 +93,7 @@ def resolve_instrument(raw_symbol: str, registry: dict[str, Instrument] | None =
 
 def tradingview_chart_symbol(instrument: Instrument) -> str:
     """Return the exchange-qualified symbol expected by the chart widget."""
-    raw = instrument.provider_symbol("tradingview")
+    raw = instrument.chart_symbol()
     if ":" in raw:
         return raw
-    exchange_prefix = {
-        "US": "NASDAQ",
-        "CA": "TSX",
-        "NG": "NGX",
-        "GB": "LSE",
-        "DE": "XETR",
-        "DK": "OMXCOP",
-    }.get(instrument.exchange or "")
-    return f"{exchange_prefix}:{raw}" if exchange_prefix else raw
+    return raw

@@ -14,8 +14,10 @@ class Instrument:
     asset_type: str = "stock"
     currency: str | None = None
     timezone: str | None = None
+    market: str | None = None
     display_name: str | None = None
     provider_symbols: dict[str, str] = field(default_factory=dict)
+    tradingview_symbol: str | None = None
 
     @property
     def instrument_id(self) -> str:
@@ -26,6 +28,10 @@ class Instrument:
     def provider_symbol(self, provider: str) -> str:
         """Return the provider symbol, falling back to the canonical symbol."""
         return self.provider_symbols.get(provider, self.symbol)
+
+    def chart_symbol(self) -> str:
+        """Return the exact exchange-qualified TradingView chart symbol."""
+        return self.tradingview_symbol or self.provider_symbols.get("tradingview", self.symbol)
 
 
 @dataclass(frozen=True)
