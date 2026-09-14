@@ -6,6 +6,8 @@ python-multipart
 python-dotenv
 werkzeug
 dotenv
+pytest
+pytest-asyncio
 
 # Financial Data & APIs
 yfinance
