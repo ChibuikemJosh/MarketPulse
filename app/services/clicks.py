@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 
 from app.cache.redis import RedisService
-from app.core.config import CLICK_BATCH_SIZE
+from app.core.constants import CLICK_BATCH_SIZE
 from app.database.repositories.clicks import insert_clicks
 from app.models.click import ClickRecord
 

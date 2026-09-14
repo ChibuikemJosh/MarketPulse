@@ -82,3 +82,19 @@ def resolve_instrument(raw_symbol: str, registry: dict[str, Instrument] | None =
         if normalized in {value.upper() for value in instrument.provider_symbols.values()}:
             return instrument
     return None
+
+
+def tradingview_chart_symbol(instrument: Instrument) -> str:
+    """Return the exchange-qualified symbol expected by the chart widget."""
+    raw = instrument.provider_symbol("tradingview")
+    if ":" in raw:
+        return raw
+    exchange_prefix = {
+        "US": "NASDAQ",
+        "CA": "TSX",
+        "NG": "NGX",
+        "GB": "LSE",
+        "DE": "XETR",
+        "DK": "OMXCOP",
+    }.get(instrument.exchange or "")
+    return f"{exchange_prefix}:{raw}" if exchange_prefix else raw

@@ -185,7 +185,7 @@ async def search_external_symbols(
         score = ALPHAVANTAGE_DEFAULT_SCORE + 0.2 * float(user_weights.get(instrument.symbol, 0.0) or 0.0)
         trend_boost = abs(0.1 * float(trend) * boost_multiplier)
         score += 0.1 * float(global_weight) + trend_boost
-        if score < FINAL_THRESHOLD - 10:
+        if score < min(FINAL_THRESHOLD - 10, ALPHAVANTAGE_DEFAULT_SCORE):
             continue
         seen.add(instrument.instrument_id)
         results.append(_result(instrument, name, score, trend_boost))

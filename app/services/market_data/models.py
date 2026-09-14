@@ -1,7 +1,7 @@
 """Canonical market-data models shared by providers and API routes."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -63,7 +63,7 @@ class ProviderFailure:
     message: str
     retryable: bool = False
     status_code: int | None = None
-    occurred_at: datetime = field(default_factory=datetime.timezone.utc)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     details: dict[str, Any] = field(default_factory=dict)
 
 
