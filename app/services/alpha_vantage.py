@@ -8,7 +8,6 @@ import requests
 
 from app.cache.redis import RedisService
 from app.core.config import ALPHA_VANTAGE_API_KEY
-from app.services.availability import can_call_alpha_vantage_api
 
 logger = logging.getLogger(__name__)
 ALPHA_VANTAGE_URL = "https://www.alphavantage.co/query"
@@ -24,7 +23,12 @@ async def fetch_symbol_matches(query: str, redis: RedisService) -> list[dict[str
     Returns:
         Alpha Vantage match dictionaries, or an empty list on failure.
     """
-    if not ALPHA_VANTAGE_API_KEY or not await can_call_alpha_vantage_api(redis):
+    if not ALPHA_VANTAGE_API_KEY or not await redis.reserve_provider_quota(
+        "alpha_vantage",
+        "daily",
+        25,
+        86400,
+    ):
         return []
     try:
         response = await asyncio.to_thread(
@@ -39,8 +43,6 @@ async def fetch_symbol_matches(query: str, redis: RedisService) -> list[dict[str
             logger.warning("Alpha Vantage returned a rate-limit response")
             return []
         matches = data.get("bestMatches", [])
-        if matches:
-            await redis.increment_alpha_vantage_calls()
         return matches
     except (requests.RequestException, ValueError, TypeError):
         logger.error("Alpha Vantage search failed for %r", query, exc_info=True)

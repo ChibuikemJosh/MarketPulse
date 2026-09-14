@@ -75,7 +75,7 @@ async def refresh_market_cache_once(redis: RedisService) -> None:
     """Refresh trend snapshots using market-configured canonical instruments."""
     registry = load_instrument_registry()
     brand_map = load_brand_map()
-    orchestrator = MarketDataOrchestrator(build_default_providers(), redis=redis)
+    orchestrator = MarketDataOrchestrator(build_default_providers(redis), redis=redis)
     semaphore = asyncio.Semaphore(config.MARKET_REFRESH_CONCURRENCY)
     await asyncio.gather(*(
         _refresh_one(
