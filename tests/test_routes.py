@@ -8,6 +8,7 @@ def test_fastapi_routes_are_registered():
     assert "/api/search" in paths
     assert "/api/dashboard-updates" in paths
     assert "/api/graph/{instrument_id}" in paths
+    assert "/api/chart-config" in paths
     assert "/candles/{instrument_id}" in paths
     assert "/quote" in paths
     assert "/static" in {route.path for route in app.routes if hasattr(route, "path")}
