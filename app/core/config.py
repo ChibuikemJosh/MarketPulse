@@ -12,7 +12,7 @@ DB_PATH = DATABASE_URL.replace("sqlite:///", "")  # Extract the file path from t
 
 SECRET_KEY = getenv("SECRET_KEY") or ""
 ALPHA_VANTAGE_API_KEY = getenv("ALPHA_VANTAGE_API_KEY") or ""
-FINNHUB_API_KEY = getenv("FINNHUB_API_KEY") or ""
+FINNHUB_API_KEY = getenv("FINNHUB_API_KEY") or "dakvf2pr01qln1kgtm7gdakvf2pr01qln1kgtm80"
 GEMINI_API_KEY = getenv("GEMINI_API_KEY") or ""
 MASSIVE_API_KEY = getenv("MASSIVE_API_KEY") or getenv("POLYGON_API_KEY") or ""
 TIINGO_API_KEY = getenv("TIINGO_API_KEY") or ""
