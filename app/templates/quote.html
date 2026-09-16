@@ -7,12 +7,17 @@
             <h1 class="h4 mb-1">{{ symbol }}</h1>
             <p class="text-muted small mb-0">{{ instrument.exchange if instrument else 'Unknown exchange' }} · {{ instrument.asset_type if instrument else 'stock' }} · {{ instrument.display_name if instrument else '' }}</p>
         </div>
-        <div class="btn-group" role="group" aria-label="Chart mode">
+        <div class="d-flex flex-wrap gap-2 align-items-center" aria-label="Chart controls">
+            <select id="chartRange" class="form-select form-select-sm" aria-label="Chart range">
+                <option value="1d">1D</option><option value="5d">5D</option><option value="1mo">1M</option><option value="3mo">3M</option><option value="6mo">6M</option><option value="1y" selected>1Y</option><option value="5y">5Y</option><option value="max">MAX</option>
+            </select>
+            <select id="chartInterval" class="form-select form-select-sm" aria-label="Chart interval"></select>
             <button type="button" class="btn btn-outline-secondary btn-sm" data-chart-mode="line">Line</button>
             <button type="button" class="btn btn-outline-secondary btn-sm" data-chart-mode="candle">Candles</button>
         </div>
     </div>
     <div id="tradingview_chart" style="height: 520px; width: 100%;"></div>
+    <div id="fallback_chart" style="display:none;height:520px;width:100%;"></div>
     <div id="fallback-chart-status" class="small text-muted mt-2" aria-live="polite"></div>
 </section>
 <section class="quote-news mt-4" aria-labelledby="quote-news-title">
@@ -30,15 +35,23 @@
     <button id="load-instrument-news" class="btn btn-sm btn-outline-secondary mt-2" type="button">Load more news</button>
 </section>
 <script>
+const lightweightChartsScript = 'https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js';
 const chartSymbol = {{ tradingview_symbol|tojson }};
 const canonicalSymbol = {{ symbol|tojson }};
 const chartStatus = document.getElementById('fallback-chart-status');
+const rangeSelect = document.getElementById('chartRange');
+const intervalSelect = document.getElementById('chartInterval');
+const fallbackContainer = document.getElementById('fallback_chart');
+const tradingViewContainer = document.getElementById('tradingview_chart');
 let chartMode = 'line';
+let selectedRange = rangeSelect.value;
+let selectedInterval = null;
+let fallbackChart = null;
 let instrumentNewsOffset = {{ news_next_offset|default(5) }};
 let instrumentNewsHasMore = {{ 'true' if news_has_more|default(false) else 'false' }};
 
 function loadTradingViewWidget() {
-    const container = document.getElementById('tradingview_chart');
+    const container = tradingViewContainer;
     container.replaceChildren();
     const widget = document.createElement('div');
     widget.className = 'tradingview-widget-container__widget';
@@ -52,17 +65,87 @@ function loadTradingViewWidget() {
     script.async = true;
     script.onerror = () => loadFallbackGraph();
     container.appendChild(script);
+    window.setTimeout(() => {
+        if (tradingViewContainer.querySelector('iframe')) {
+            chartStatus.textContent = `TradingView chart: ${chartSymbol}`;
+        } else {
+            loadFallbackGraph();
+        }
+    }, 6000);
+}
+
+function loadChartLibrary() {
+    if (window.LightweightCharts) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = lightweightChartsScript;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+function renderFallback(points) {
+    fallbackContainer.replaceChildren();
+    fallbackChart = LightweightCharts.createChart(fallbackContainer, {
+        width: fallbackContainer.clientWidth || 700,
+        height: 520,
+        layout: { background: { color: 'transparent' }, textColor: '#64748b' },
+        grid: { vertLines: { color: '#e2e8f0' }, horzLines: { color: '#e2e8f0' } },
+        timeScale: { borderColor: '#cbd5e1', timeVisible: true },
+        rightPriceScale: { borderColor: '#cbd5e1' }
+    });
+    const series = chartMode === 'line'
+        ? fallbackChart.addLineSeries({ color: '#2563eb', lineWidth: 2 })
+        : fallbackChart.addCandlestickSeries({ upColor: '#16a34a', downColor: '#dc2626', borderVisible: false, wickUpColor: '#16a34a', wickDownColor: '#dc2626' });
+    series.setData(points.map(point => chartMode === 'line'
+        ? ({ time: Math.floor(new Date(point.time).getTime() / 1000), value: point.value })
+        : ({ time: Math.floor(new Date(point.time).getTime() / 1000), open: point.open, high: point.high, low: point.low, close: point.close })));
+    fallbackChart.timeScale().fitContent();
+    window.addEventListener('resize', () => fallbackChart?.applyOptions({ width: fallbackContainer.clientWidth || 700 }));
+}
+
+function updateIntervals(intervals, defaultInterval) {
+    const current = selectedInterval;
+    intervalSelect.replaceChildren();
+    intervals.forEach(interval => {
+        const option = document.createElement('option');
+        option.value = interval;
+        option.textContent = interval;
+        intervalSelect.appendChild(option);
+    });
+    selectedInterval = intervals.includes(current) ? current : defaultInterval;
+    intervalSelect.value = selectedInterval;
+}
+
+async function loadChartConfig() {
+    const response = await fetch('/api/chart-config');
+    const payload = await response.json();
+    const config = payload.ranges[selectedRange];
+    if (config) updateIntervals(config.allowed_intervals, config.default_interval);
 }
 
 async function loadFallbackGraph() {
     chartStatus.textContent = 'TradingView chart unavailable. Loading normalized fallback data.';
-    const response = await fetch(`/api/graph/${encodeURIComponent(canonicalSymbol)}?mode=${chartMode}`);
+    const params = new URLSearchParams({ mode: chartMode, range: selectedRange });
+    if (selectedInterval) params.set('interval', selectedInterval);
+    const response = await fetch(`/api/graph/${encodeURIComponent(canonicalSymbol)}?${params}`);
     const payload = await response.json();
     if (payload.status === 'error') {
         chartStatus.textContent = 'Fallback market data is currently unavailable.';
         return;
     }
-    chartStatus.textContent = `${payload.points.length} normalized ${chartMode} points available from the backend.`;
+    selectedInterval = payload.interval;
+    updateIntervals(payload.available_intervals, payload.default_interval);
+    try {
+        await loadChartLibrary();
+        tradingViewContainer.style.display = 'none';
+        fallbackContainer.style.display = 'block';
+        renderFallback(payload.points);
+        chartStatus.textContent = `Fallback ${chartMode} chart: ${payload.range} / ${payload.interval}`;
+    } catch (error) {
+        chartStatus.textContent = 'Chart renderer unavailable. Market data could not be displayed.';
+    }
 }
 
 document.querySelectorAll('[data-chart-mode]').forEach(button => {
@@ -70,6 +153,15 @@ document.querySelectorAll('[data-chart-mode]').forEach(button => {
         chartMode = button.dataset.chartMode;
         loadFallbackGraph();
     });
+});
+rangeSelect.addEventListener('change', () => {
+    selectedRange = rangeSelect.value;
+    selectedInterval = null;
+    loadFallbackGraph();
+});
+intervalSelect.addEventListener('change', () => {
+    selectedInterval = intervalSelect.value;
+    loadFallbackGraph();
 });
 document.getElementById('load-instrument-news')?.addEventListener('click', async () => {
     if (!instrumentNewsHasMore) return;
@@ -94,6 +186,9 @@ document.getElementById('load-instrument-news')?.addEventListener('click', async
     instrumentNewsOffset = data.next_offset;
     instrumentNewsHasMore = data.has_more;
     if (!instrumentNewsHasMore) document.getElementById('load-instrument-news').textContent = 'No more news available';
+});
+loadChartConfig().catch(() => {
+    chartStatus.textContent = 'Chart configuration is temporarily unavailable.';
 });
 loadTradingViewWidget();
 </script>
