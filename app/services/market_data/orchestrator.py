@@ -15,6 +15,38 @@ from app.services.market_data.models import Candle, Instrument, ProviderFailure,
 logger = logging.getLogger(__name__)
 
 
+def _cached_candle(item: dict) -> Candle:
+    """Restore a cached candle timestamp to the model's datetime type."""
+    timestamp = item["timestamp"]
+    if isinstance(timestamp, str):
+        timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    return Candle(
+        timestamp=timestamp,
+        open=item.get("open"),
+        high=item.get("high"),
+        low=item.get("low"),
+        close=item.get("close"),
+        volume=item.get("volume"),
+        vwap=item.get("vwap"),
+    )
+
+
+def _cached_quote(item: dict) -> Quote:
+    """Restore a cached quote timestamp to the model's datetime type."""
+    as_of = item.get("as_of")
+    if isinstance(as_of, str):
+        as_of = datetime.fromisoformat(as_of.replace("Z", "+00:00"))
+    return Quote(
+        symbol=item["symbol"],
+        price=item.get("price"),
+        previous_close=item.get("previous_close"),
+        change=item.get("change"),
+        change_percent=item.get("change_percent"),
+        volume=item.get("volume"),
+        as_of=as_of,
+    )
+
+
 class MarketDataOrchestrator:
     """Try providers in order with timeout, cache, retry, and circuit state."""
 
@@ -40,7 +72,7 @@ class MarketDataOrchestrator:
             cached = await self._read_cache(cache_key)
             if cached is not None:
                 try:
-                    return [Candle(**item) for item in cached.get("data", [])]
+                    return [_cached_candle(item) for item in cached.get("data", [])]
                 except (TypeError, ValueError):
                     logger.warning("Ignoring malformed candle cache for %s", instrument.instrument_id)
             failure = await self._read_failure("historical_candles", instrument.instrument_id, provider.name, interval, start.isoformat(), end.isoformat())
@@ -66,7 +98,7 @@ class MarketDataOrchestrator:
             cached = await self._read_cache(cache_key)
             if cached is not None:
                 try:
-                    return Quote(**cached["data"])
+                    return _cached_quote(cached["data"])
                 except (KeyError, TypeError, ValueError):
                     logger.warning("Ignoring malformed quote cache for %s", instrument.instrument_id)
             failure = await self._read_failure("quote", instrument.instrument_id, provider.name)
