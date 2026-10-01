@@ -104,7 +104,9 @@ def simplify_line(points: Sequence[dict[str, Any]], max_points: int = LINE_MAX_P
     if len(result) <= 2:
         return result
     current_slope, current_deviation = slope_tolerance, deviation_tolerance
-    while True:
+
+    iterations = 0
+    while iterations < 15:
         changed = True
         while changed and len(result) > 2:
             changed = False
@@ -120,6 +122,9 @@ def simplify_line(points: Sequence[dict[str, Any]], max_points: int = LINE_MAX_P
             return result
         current_slope *= 2
         current_deviation *= 2
+        iterations += 1
+
+    return result[:max_points] # Emergency slicing fallback if volatitlity wouldn't collapse
 
 
 def line_points(candles: Sequence[Candle], max_points: int = LINE_MAX_POINTS) -> list[dict[str, Any]]:
