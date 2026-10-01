@@ -2,8 +2,10 @@
 
 USER_WEIGHTS = "cache:user:{user_id}:weights"
 GLOBAL_WEIGHTS = "cache:global:weights"
+
 TRENDING = "cache:trending_scores"
 TRENDING_METADATA = "cache:trending_metadata"
+
 CACHED_NAMES = "cache:cached_names"
 
 CLICK_QUEUE_LOCK = "lock:queue:clicks"
