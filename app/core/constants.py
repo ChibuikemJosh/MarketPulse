@@ -21,5 +21,5 @@ SEARCH_RESULT_LIMIT = 5
 JUNK_SUFFIXES = (
     " Corporation", " Corp", " Inc.", " Inc", " Ltd.", " Ltd", " Limited",
     " Plc", " Group", " Holdings", " Common Stock", " Class A", " Class B",
-    " ADR", " Co ", " Co.",
+    " ADR", " Co.", " Co ",
 )
