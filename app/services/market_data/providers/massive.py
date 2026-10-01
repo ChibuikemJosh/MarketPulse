@@ -18,11 +18,12 @@ class MassiveProvider(MarketDataProvider):
     name = "massive"
     base_url = "https://api.massive.com"
 
-    def __init__(self, api_key: str = config.MASSIVE_API_KEY, redis=None):
+    def __init__(self, api_key: str = config.MASSIVE_API_KEY, redis=None, client: httpx.AsyncClient | None = None):
         self.api_key = api_key
         self.redis = redis
+        self._client = client if client else httpx.AsyncClient(timeout=config.PROVIDER_TIMEOUT_SECONDS)
 
-    async def historical_candles(self, instrument, start: date, end: date, interval: str):
+    async def historical_candles(self, instrument: Instrument, start: date, end: date, interval: str):
         if not self.api_key:
             return ProviderFailure(self.name, "historical_candles", "Provider is disabled", retryable=False)
         period = datetime.now(timezone.utc).strftime("%Y%m%d%H%M")
@@ -33,8 +34,7 @@ class MassiveProvider(MarketDataProvider):
         multiplier, timespan = _interval(interval)
         url = f"{self.base_url}/v2/aggs/ticker/{instrument.provider_symbol(self.name)}/range/{multiplier}/{timespan}/{start}/{end}"
         try:
-            async with httpx.AsyncClient(timeout=config.PROVIDER_TIMEOUT_SECONDS) as client:
-                response = await client.get(url, params={"adjusted": "true", "sort": "asc", "limit": 50000, "apiKey": self.api_key})
+            response = await self._client.get(url, params={"adjusted": "true", "sort": "asc", "limit": 50000, "apiKey": self.api_key})
             if response.status_code in {429, 500, 502, 503, 504}:
                 return ProviderFailure(self.name, "historical_candles", response.text, retryable=True, status_code=response.status_code)
             response.raise_for_status()

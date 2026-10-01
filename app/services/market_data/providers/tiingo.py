@@ -18,9 +18,10 @@ class TiingoProvider(MarketDataProvider):
     name = "tiingo"
     base_url = "https://api.tiingo.com"
 
-    def __init__(self, api_key: str = config.TIINGO_API_KEY, redis=None):
+    def __init__(self, api_key: str = config.TIINGO_API_KEY, redis=None, client: httpx.AsyncClient | None = None):
         self.api_key = api_key
         self.redis = redis
+        self._client = client if client else httpx.AsyncClient(timeout=config.PROVIDER_TIMEOUT_SECONDS)
 
     async def historical_candles(self, instrument, start: date, end: date, interval: str):
         if not self.api_key:
@@ -33,8 +34,7 @@ class TiingoProvider(MarketDataProvider):
             return ProviderFailure(self.name, "historical_candles", "Tiingo adapter supports daily intervals only", retryable=False)
         url = f"{self.base_url}/tiingo/daily/{instrument.provider_symbol(self.name)}/prices"
         try:
-            async with httpx.AsyncClient(timeout=config.PROVIDER_TIMEOUT_SECONDS) as client:
-                response = await client.get(url, params={"startDate": start.isoformat(), "endDate": end.isoformat(), "token": self.api_key})
+            response = await self._client.get(url, params={"startDate": start.isoformat(), "endDate": end.isoformat(), "token": self.api_key})
             if response.status_code in {429, 500, 502, 503, 504}:
                 return ProviderFailure(self.name, "historical_candles", response.text, retryable=True, status_code=response.status_code)
             response.raise_for_status()
@@ -45,8 +45,14 @@ class TiingoProvider(MarketDataProvider):
             ) for item in response.json()]
             return candles or ProviderFailure(self.name, "historical_candles", "No candles returned", retryable=False)
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as error:
-            logger.warning("Tiingo historical request failed for %s", instrument.symbol, exc_info=True)
-            return ProviderFailure(self.name, "historical_candles", str(error), retryable=True)
+            logger.debug("Tiingo historical request failed for %s: %s", instrument.symbol, error)
+            return ProviderFailure(
+                self.name,
+                "historical_candles",
+                "provider_data_unavailable",
+                retryable=False,
+                details={"reason": "historical_data_unavailable"},
+            )
 
     async def quote(self, instrument):
         return ProviderFailure(self.name, "quote", "Quote endpoint not implemented", retryable=False)

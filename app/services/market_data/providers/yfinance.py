@@ -41,8 +41,14 @@ class YFinanceProvider(LiveMarketDataProvider):
                 return ProviderFailure(self.name, "historical_candles", "No candles returned", retryable=False)
             return candles
         except Exception as error:
-            logger.warning("yfinance historical request failed for %s", instrument.symbol, exc_info=True)
-            return ProviderFailure(self.name, "historical_candles", str(error), retryable=True)
+            logger.debug("yfinance historical request failed for %s: %s", instrument.symbol, error)
+            return ProviderFailure(
+                self.name,
+                "historical_candles",
+                "provider_data_unavailable",
+                retryable=False,
+                details={"reason": "historical_data_unavailable"},
+            )
 
     async def quote(self, instrument):
         return await self.live_quote(instrument)
@@ -56,5 +62,11 @@ class YFinanceProvider(LiveMarketDataProvider):
             close = float(row["Close"])
             return Quote(symbol=instrument.symbol, price=close, volume=float(row["Volume"]), as_of=as_of or datetime.utcnow())
         except Exception as error:
-            logger.warning("yfinance quote request failed for %s", instrument.symbol, exc_info=True)
-            return ProviderFailure(self.name, "quote", str(error), retryable=True)
+            logger.debug("yfinance quote request failed for %s: %s", instrument.symbol, error)
+            return ProviderFailure(
+                self.name,
+                "quote",
+                "provider_data_unavailable",
+                retryable=False,
+                details={"reason": "quote_data_unavailable"},
+            )
