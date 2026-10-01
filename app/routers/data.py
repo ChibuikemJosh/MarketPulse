@@ -27,6 +27,7 @@ async def chart_config_endpoint():
     }
 
 
+@router.get("/candles/{instrument_id:path}")
 @router.get("/api/candles/{instrument_id:path}")
 async def candles_endpoint(
     instrument_id: str,

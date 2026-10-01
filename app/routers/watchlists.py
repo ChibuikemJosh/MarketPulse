@@ -16,6 +16,7 @@ class WatchlistRequest(BaseModel):
     symbol: str
 
 
+@router.get("")
 @router.get("/")
 async def get_watchlist(user: CurrentUser = Depends(current_user)):
     """Return the authenticated user's saved symbols."""
