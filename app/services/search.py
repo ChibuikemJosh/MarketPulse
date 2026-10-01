@@ -200,6 +200,7 @@ async def search_symbols(
     query: str,
     redis: RedisService,
     user_id: str | int | None = None,
+    registry: dict[str, Instrument] | None = None,
     result_limit: int = SEARCH_RESULT_LIMIT,
 ) -> list[dict[str, Any]]:
     """Search configured instruments and use Alpha Vantage only when sparse."""
@@ -212,7 +213,9 @@ async def search_symbols(
         redis.get_trending_scores(),
         redis.get_cached_names(),
     )
-    registry = load_instrument_registry()
+    
+    registry = registry or load_instrument_registry()
+    
     seen: set[str] = set()
     results = rank_configured_symbols(normalized_query, user_weights, global_weights, trends, names, seen, registry)
     if len(results) < result_limit and len(normalized_query) > 3:

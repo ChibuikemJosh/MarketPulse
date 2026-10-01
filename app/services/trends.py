@@ -3,6 +3,7 @@
 import asyncio
 from datetime import datetime, timezone
 import logging
+import httpx
 
 from app.cache.redis import RedisService
 from app.config.loader import load_brand_map
@@ -71,11 +72,11 @@ async def _refresh_one(
             })
 
 
-async def refresh_market_cache_once(redis: RedisService) -> None:
+async def refresh_market_cache_once(redis: RedisService, client: httpx.AsyncClient | None = None) -> None:
     """Refresh trend snapshots using market-configured canonical instruments."""
     registry = load_instrument_registry()
     brand_map = load_brand_map()
-    orchestrator = MarketDataOrchestrator(build_default_providers(redis), redis=redis)
+    orchestrator = MarketDataOrchestrator(build_default_providers(redis, client), redis=redis)
     semaphore = asyncio.Semaphore(config.MARKET_REFRESH_CONCURRENCY)
     await asyncio.gather(*(
         _refresh_one(
@@ -89,7 +90,7 @@ async def refresh_market_cache_once(redis: RedisService) -> None:
     ))
 
 
-async def refresh_market_cache(redis: RedisService) -> None:
+async def refresh_market_cache(redis: RedisService, client: httpx.AsyncClient | None = None) -> None:
     """Run one refresh leader every ten minutes without duplicate workers."""
     while True:
         try:
@@ -97,7 +98,7 @@ async def refresh_market_cache(redis: RedisService) -> None:
             acquired = await lock.acquire(blocking=False)
             if acquired:
                 try:
-                    await refresh_market_cache_once(redis)
+                    await refresh_market_cache_once(redis, client=client)
                 finally:
                     await lock.release()
         except asyncio.CancelledError:
