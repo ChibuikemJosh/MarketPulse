@@ -4,6 +4,7 @@ import pytest
 
 from app.services import search
 from app.services.market_data.models import Instrument
+from app.services.market_data.normalization import load_instrument_registry
 
 
 class FakeRedis:
@@ -42,10 +43,11 @@ async def test_async_search_returns_local_results(monkeypatch):
     monkeypatch.setattr(search, "load_brand_map", lambda: {"AAPL": ["Apple"]})
     monkeypatch.setattr(search, "fetch_symbol_matches", lambda query, redis: _empty_matches())
 
-    results = await search.search_symbols("apple", FakeRedis())
+    registry = load_instrument_registry()
+    results = await search.search_symbols("apple", FakeRedis(), registry=registry)
 
     assert results[0]["symbol"] == "AAPL"
-    assert results[0]["instrument_id"] == "STOCK:US:AAPL"
+    assert results[0]["instrument_id"] == "STOCK:NASDAQ:AAPL"
     assert "score" not in results[0]
 
 
