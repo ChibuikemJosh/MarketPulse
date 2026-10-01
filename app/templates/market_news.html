@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block title %}Market News{% endblock %}
+{% block content %}
+<section class="market-news-page" aria-labelledby="market-news-title">
+    <h1 id="market-news-title" class="h4 mb-1">Market News</h1>
+    <p class="text-muted small mb-4">Relevant market stories, refreshed from Finnhub.</p>
+    <div id="market-news-feed">
+        {% for item in news %}
+        <article class="news-feed-card">
+            <small class="text-primary fw-bold">{{ item.source }}</small>
+            <h2 class="h6 mt-1"><a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.headline }}</a></h2>
+            <p class="small text-muted mb-1">{{ item.summary }}</p>
+        </article>
+        {% endfor %}
+    </div>
+    <button id="market-news-more" class="btn btn-outline-secondary btn-sm mt-3" type="button">Load more stories</button>
+</section>
+<script>
+let newsOffset = {{ news_next_offset }};
+let newsHasMore = {{ 'true' if news_has_more else 'false' }};
+const newsButton = document.getElementById('market-news-more');
+newsButton.addEventListener('click', async () => {
+    if (!newsHasMore) return;
+    newsButton.disabled = true;
+    newsButton.textContent = 'Loading…';
+    const response = await fetch(`/api/news/market?offset=${newsOffset}`);
+    const payload = await response.json();
+    const feed = document.getElementById('market-news-feed');
+    payload.items.forEach(item => {
+        const article = document.createElement('article');
+        article.className = 'news-feed-card';
+        const source = document.createElement('small');
+        source.className = 'text-primary fw-bold';
+        source.textContent = item.source || '';
+        const title = document.createElement('h2');
+        title.className = 'h6 mt-1';
+        const link = document.createElement('a');
+        link.href = item.url || '#';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = item.headline || '';
+        title.appendChild(link);
+        const summary = document.createElement('p');
+        summary.className = 'small text-muted mb-1';
+        summary.textContent = item.summary || '';
+        article.append(source, title, summary);
+        feed.appendChild(article);
+    });
+    newsOffset = payload.next_offset;
+    newsHasMore = payload.has_more;
+    newsButton.disabled = !newsHasMore;
+    newsButton.textContent = newsHasMore ? 'Load more stories' : 'No more stories';
+});
+if (!newsHasMore) { newsButton.disabled = true; newsButton.textContent = 'No more stories'; }
+</script>
+{% endblock %}

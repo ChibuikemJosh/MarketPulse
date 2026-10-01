@@ -22,9 +22,10 @@
             </div>
             <span class="text-main">market</span><span class="text-blue">pulse</span>
         </a>
+        <button type="button" id="mobileThemeToggle" class="mobile-theme-toggle d-md-none" aria-label="Toggle theme" title="Toggle theme"><i class="bi bi-moon-stars" aria-hidden="true"></i></button>
 
         <div class="my-search-form">
-            <form action="/" method="GET" autocomplete="off" style="position: relative;">
+            <form action="/quote" method="GET" autocomplete="off" style="position: relative;">
                 <i class="bi bi-search search-icon"></i>
                 <input type="text" id="stockSearch" name="symbol" class="my-input" placeholder="Search stock brands, names or symbols">
 
@@ -35,18 +36,37 @@
         <div class="d-flex align-items-center">
             <div class="d-none d-md-flex align-items-center gap-2 me-3">
                 <a href="/" class="text-decoration-none small fw-semibold opacity-75">Dashboard</a>
-                <a href="/watchlist" class="nav-icon-link" aria-label="Watchlist" title="Watchlist"><i class="bi bi-bookmark-star"></i></a>
-                <a href="/#market-news" class="nav-icon-link" aria-label="Market news" title="Market news"><i class="bi bi-newspaper"></i></a>
+                <a href="/watchlist" class="text-decoration-none small fw-semibold opacity-75">Watchlist</a>
                 <button type="button" id="themeToggle" class="nav-icon-link border-0" aria-label="Toggle dark mode" title="Toggle dark mode"><i class="bi bi-moon-stars"></i></button>
             </div>
             <div class="d-flex align-items-center gap-2">
-                {% if not user_authenticated %}
+                {% if user_authenticated %}
+                    <span class="small text-light opacity-75 d-none d-md-inline">{{ current_user.username }}</span>
+                    <form action="/logout" method="post" class="d-inline">
+                        <button type="submit" class="nav-signout-btn btn btn-outline-danger btn-sm px-3">Sign out</button>
+                    </form>
+                {% else %}
                     <a href="/login" class="nav-signup-btn btn btn-primary btn-sm px-3 fw-bold">Sign In</a>
                 {% endif %}
-                <button type="button" class="mobile-nav-button d-md-none" aria-label="Open navigation" onclick="document.body.classList.toggle('nav-open')"><i class="bi bi-list"></i></button>
+                <button type="button" id="mobileNavToggle" class="mobile-nav-button d-md-none" aria-label="Open navigation" aria-controls="mobileNavMenu" aria-expanded="false"><i class="bi bi-list"></i></button>
             </div>
         </div>
     </header>
+    <nav id="mobileNavMenu" class="mobile-nav-menu" aria-label="Mobile navigation" hidden>
+        <a href="/" class="mobile-nav-link"><i class="bi bi-grid-1x2" aria-hidden="true"></i>Dashboard</a>
+        <a href="/watchlist" class="mobile-nav-link"><i class="bi bi-bookmark-star" aria-hidden="true"></i>Watchlist</a>
+        <a href="/market-news" class="mobile-nav-link"><i class="bi bi-newspaper" aria-hidden="true"></i>Market News</a>
+        {% if user_authenticated %}
+        <div class="mobile-nav-divider"></div>
+        <span class="mobile-nav-user"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ current_user.username }}</span>
+        <form action="/logout" method="post" class="d-inline">
+            <button type="submit" class="mobile-nav-signout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Sign out</button>
+        </form>
+        {% else %}
+        <div class="mobile-nav-divider"></div>
+        <a href="/login" class="mobile-nav-link"><i class="bi bi-person" aria-hidden="true"></i>Sign in</a>
+        {% endif %}
+    </nav>
 
     <div class="page-wrapper">
         <main class="main-card">
@@ -90,7 +110,7 @@ const searchInput = document.getElementById('stockSearch');
 const suggestionsBox = document.getElementById('searchSuggestions');
 let debounceTimer;
 let newsOffset = Number("{{ news_next_offset|default(15) }}");
-let newsHasMore = {{ 'true' if news_has_more|default(false) else 'false' }};
+let newsHasMore = "{{ 'true' if news_has_more|default(false) else 'false' }}" === 'true';
 
 // 1. Function moved outside to global script scope
 async function recordClick(symbol) {
@@ -299,31 +319,72 @@ async function syncDashboard() {
 
 async function loadMoreNews() {
     if (!newsHasMore) return;
-    const response = await fetch(`/api/news/market?offset=${newsOffset}`);
-    const data = await response.json();
-    data.items.forEach(item => {
-        const newsItem = document.createElement('div');
-        newsItem.className = 'news-item mb-3 border-bottom pb-2 fade-in-row';
-        const source = document.createElement('small');
-        source.className = 'text-primary fw-bold';
-        source.textContent = item.source || '';
-        const headline = document.createElement('h6');
-        headline.className = 'mb-1 small fw-bold';
-        headline.textContent = item.headline || '';
-        newsItem.append(source, headline);
-        newsContainer.appendChild(newsItem);
-    });
-    newsOffset = data.next_offset;
-    newsHasMore = data.has_more;
-    if (!newsHasMore) document.getElementById('load-more-news').textContent = 'No more news available';
+    const button = document.getElementById('load-more-news');
+    if (!button) return;
+    button.disabled = true;
+    button.textContent = 'Loading…';
+    try {
+        const response = await fetch(`/api/news/market?offset=${newsOffset}`);
+        const data = await response.json();
+        const newsContainer = document.getElementById('news-container');
+        if (data.items && data.items.length > 0) {
+            data.items.forEach(item => {
+                const newsItem = document.createElement('div');
+                newsItem.className = 'news-item mb-3 border-bottom pb-2 fade-in-row';
+                const source = document.createElement('small');
+                source.className = 'text-primary fw-bold';
+                source.textContent = item.source || '';
+                const link = document.createElement('a');
+                link.href = item.url || '#';
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.className = 'd-block text-dark text-decoration-none fw-semibold small mt-1';
+                const headline = document.createElement('h6');
+                headline.className = 'mb-1 small fw-bold';
+                headline.textContent = item.headline || '';
+                link.appendChild(headline);
+                newsItem.append(source, link);
+                newsContainer.appendChild(newsItem);
+            });
+            newsOffset = data.next_offset;
+            newsHasMore = data.has_more;
+        } else {
+            newsHasMore = false;
+        }
+        if (!newsHasMore) { button.textContent = 'No more stories'; button.disabled = true; }
+        else { button.disabled = false; button.textContent = 'Load more stories'; }
+    } catch (e) {
+        button.textContent = 'Load more stories';
+        button.disabled = false;
+    }
 }
 
 document.getElementById('load-more-news')?.addEventListener('click', loadMoreNews);
-document.getElementById('themeToggle')?.addEventListener('click', () => {
+function toggleTheme() {
     const dark = document.documentElement.classList.toggle('dark-mode');
     localStorage.setItem('marketpulse-theme', dark ? 'dark' : 'light');
+    document.querySelectorAll('#themeToggle i, #mobileThemeToggle i').forEach(icon => { icon.className = `bi ${dark ? 'bi-sun' : 'bi-moon-stars'}`; });
+}
+document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+document.getElementById('mobileThemeToggle')?.addEventListener('click', toggleTheme);
+if (localStorage.getItem('marketpulse-theme') === 'dark') {
+    document.documentElement.classList.add('dark-mode');
+    document.querySelectorAll('#themeToggle i, #mobileThemeToggle i').forEach(icon => { icon.className = 'bi bi-sun'; });
+}
+const mobileNavToggle = document.getElementById('mobileNavToggle');
+const mobileNavMenu = document.getElementById('mobileNavMenu');
+mobileNavToggle?.addEventListener('click', () => {
+    const open = mobileNavMenu.hidden;
+    mobileNavMenu.hidden = !open;
+    mobileNavToggle.setAttribute('aria-expanded', String(open));
+    mobileNavToggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
 });
-if (localStorage.getItem('marketpulse-theme') === 'dark') document.documentElement.classList.add('dark-mode');
+document.addEventListener('click', event => {
+    if (mobileNavMenu && mobileNavToggle && !mobileNavMenu.hidden && !mobileNavMenu.contains(event.target) && !mobileNavToggle.contains(event.target)) {
+        mobileNavMenu.hidden = true;
+        mobileNavToggle.setAttribute('aria-expanded', 'false');
+    }
+});
 </script>
 </body>
 </html>

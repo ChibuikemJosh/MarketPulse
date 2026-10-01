@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block title %}Create Account{% endblock %}
+{% block content %}
+<section class="auth-panel mx-auto" style="max-width: 460px;">
+    <h1 class="h4 mb-1">Create your account</h1>
+    <p class="text-muted small mb-4">Save stocks to your watchlist and personalize discovery.</p>
+    {% if error %}<div class="alert alert-danger small">{{ error }}</div>{% endif %}
+    <form action="/signup" method="post" class="d-grid gap-3">
+        <label class="small fw-semibold" for="username">Username</label>
+        <input id="username" name="username" class="form-control" minlength="3" maxlength="32" autocomplete="username" required>
+        <label class="small fw-semibold" for="email">Email <span class="text-muted fw-normal">(optional)</span></label>
+        <input id="email" type="email" name="email" class="form-control" autocomplete="email">
+        <label class="small fw-semibold" for="password">Password</label>
+        <input id="password" type="password" name="password" class="form-control" minlength="8" autocomplete="new-password" required>
+        <button class="btn btn-primary fw-semibold" type="submit">Create account</button>
+    </form>
+    <p class="small text-muted mt-4 mb-0">Already have an account? <a href="/login">Sign in</a></p>
+</section>
+{% endblock %}

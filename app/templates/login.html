@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block title %}Sign In{% endblock %}
+{% block content %}
+<section class="auth-panel mx-auto" style="max-width: 460px;">
+    <h1 class="h4 mb-1">Welcome back</h1>
+    <p class="text-muted small mb-4">Sign in to access your watchlist and personalized market activity.</p>
+    {% if error %}<div class="alert alert-danger small">{{ error }}</div>{% endif %}
+    <form action="/login" method="post" class="d-grid gap-3">
+        <input type="hidden" name="next" value="{{ next|default('/') }}">
+        <label class="small fw-semibold" for="username">Username</label>
+        <input id="username" name="username" class="form-control" autocomplete="username" required>
+        <label class="small fw-semibold" for="password">Password</label>
+        <input id="password" type="password" name="password" class="form-control" autocomplete="current-password" required>
+        <button class="btn btn-primary fw-semibold" type="submit">Sign in</button>
+    </form>
+    {% if google_enabled %}
+    <a class="btn btn-outline-secondary w-100 mt-3" href="/auth/google"><span aria-hidden="true">G</span> Continue with Google</a>
+    {% endif %}
+    <p class="small text-muted mt-4 mb-0">Don't have an account? <a href="/signup">Create one</a></p>
+</section>
+{% endblock %}
