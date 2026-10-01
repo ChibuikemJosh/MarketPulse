@@ -54,7 +54,14 @@ async def lifespan(app: FastAPI):
     await client.aclose()
 
 app = FastAPI(title="MarketPulse", version="1.0.0", docs_url="/docs", lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=config.SECRET_KEY or "marketpulse-dev-secret", max_age=config.SESSION_MAX_AGE, https_only=config.SESSION_COOKIE_SECURE, same_site=config.SESSION_SAME_SITE)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=config.SECRET_KEY or "marketpulse-dev-secret",
+    max_age=config.SESSION_MAX_AGE,
+    https_only=config.SESSION_COOKIE_SECURE,
+    same_site=config.SESSION_SAME_SITE,
+    path="/",
+)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(pages.router)
 app.include_router(search.router)

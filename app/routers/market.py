@@ -24,5 +24,5 @@ async def market_updates(
         for symbol, change in scores.items()
     ]
     stocks.sort(key=lambda item: abs(item["price_change"]), reverse=True)
-    news_page = await get_market_news(redis, offset)
-    return {"stocks": stocks[offset:offset + limit], "news": news_page["items"], "news_has_more": news_page["has_more"], "news_next_offset": news_page["next_offset"]}
+
+    return {"stocks": stocks[offset:offset + limit]}
