@@ -17,7 +17,7 @@ def _scan(market: str, ticker: str):
     _, frame = (
         Query()
         .set_markets(market)
-        .select("name", "open", "high", "low", "close", "volume", "change")
+        .select("name", "open", "high", "low", "close", "volume", "change", "change_abs")
         .limit(5000)
         .get_scanner_data()
     )
@@ -43,10 +43,18 @@ class TradingViewProvider(MarketDataProvider):
             if row is None:
                 return ProviderFailure(self.name, "quote", "Symbol was not returned by screener", retryable=False)
             close = _number(row.get("close"))
+            change_percent = _number(row.get("change"))
+            change = _number(row.get("change_abs"))
+            previous_close = close - change if close is not None and change is not None else None
+            if change is None and close is not None and change_percent is not None:
+                previous_close = close / (1 + change_percent / 100) if change_percent != -100 else None
+                change = close - previous_close if previous_close is not None else None
             return Quote(
                 symbol=instrument.symbol,
                 price=close,
-                change_percent=_number(row.get("change")),
+                previous_close=previous_close,
+                change=change,
+                change_percent=change_percent,
             )
         except Exception as error:
             logger.warning("TradingView screener request failed for %s", instrument.symbol, exc_info=True)
