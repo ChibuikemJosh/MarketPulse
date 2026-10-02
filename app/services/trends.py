@@ -55,6 +55,10 @@ async def _refresh_one(
                 "status": "ok",
                 "is_stale": False,
                 "provider": "orchestrator",
+                "price": quote.price,
+                "previous_close": quote.previous_close,
+                "change": quote.change,
+                "change_percent": change,
                 "as_of": quote.as_of.isoformat() if quote.as_of else None,
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             })
