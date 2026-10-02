@@ -233,6 +233,7 @@ form { overflow: visible; }
     border-radius: 9px;
     text-decoration: none;
 }
+.theme-icon { width: 1.1rem; height: 1.1rem; display: block; }
 .nav-icon-link:hover,
 .mobile-nav-button:hover { background: rgba(255,255,255,0.12); color: #fff; }
 .mobile-news-link { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -276,7 +277,7 @@ html.dark-mode .trending-row:hover { background: #374151; }
     cursor: pointer; transition: all 0.15s ease;
 }
 .watchlist-icon { width: 1rem; height: 1rem; flex: 0 0 auto; }
-.watchlist-toggle:hover { border-color: #3b82f6; color: #3b82f6; background: rgba(59,130,246,0.05); }
+.watchlist-toggle:hover { border-color: #16a34a; color: #16a34a; background: rgba(22,163,74,0.05); }
 .watchlist-toggle.saved { border-color: #f59e0b; color: #f59e0b; background: rgba(245,158,11,0.08); }
 .watchlist-toggle.saved:hover { border-color: #dc2626; color: #dc2626; background: rgba(220,38,38,0.08); }
 html.dark-mode .watchlist-toggle { border-color: #4b5563; color: #d1d5db; }
@@ -298,7 +299,9 @@ html.dark-mode .watchlist-toggle.saved:hover { border-color: #ef4444; color: #f8
 }
 .watchlist-symbol { font-weight: 700; font-size: 0.95rem; color: #111827; white-space: nowrap; }
 .watchlist-name { font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.watchlist-price { font-size: 0.9rem; font-weight: 600; color: #111827; white-space: nowrap; }
 .watchlist-change { font-weight: 600; font-size: 0.85rem; margin-left: auto; white-space: nowrap; }
+.watchlist-absolute-change { font-size: 0.75rem; white-space: nowrap; }
 .watchlist-change.positive { color: #22c55e; }
 .watchlist-change.negative { color: #ef4444; }
 .watchlist-remove {
@@ -310,7 +313,17 @@ html.dark-mode .watchlist-toggle.saved:hover { border-color: #ef4444; color: #f8
 .watchlist-remove:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
 html.dark-mode .watchlist-card { background: #1f2937; border-color: #374151; }
 html.dark-mode .watchlist-card:hover { border-color: #3b82f6; }
-html.dark-mode .watchlist-symbol { color: #f3f4f6; }
+html.dark-mode .watchlist-symbol,
+html.dark-mode .watchlist-price { color: #111827; }
+.quote-snapshot { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.quote-price { font-size: 1.45rem; font-weight: 700; color: #111827; }
+.quote-change { font-weight: 700; }
+.quote-change.positive, .positive { color: #16a34a; }
+.quote-change.negative, .negative { color: #dc2626; }
+.quote-as-of { font-size: 0.7rem; }
+html.dark-mode .quote-price { color: #111827; }
+html.dark-mode .watchlist-card .watchlist-name,
+html.dark-mode .watchlist-card .watchlist-absolute-change { color: #4b5563 !important; }
 /* ====== CHART CONTROLS ====== */
 .chart-control-group { display: flex; flex-direction: column; gap: 2px; }
 .chart-control-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; }
@@ -362,7 +375,7 @@ html.dark-mode .trending-row {
 html.dark-mode .trending-row:hover {
     background: #2d3748; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.12);
 }
-html.dark-mode .trending-row .text-dark { color: #e5e7eb !important; }
+html.dark-mode .trending-row .text-dark { color: #111827 !important; }
 
 /* ====== MOBILE NAV ====== */
 .mobile-nav-menu {
@@ -390,6 +403,35 @@ html.dark-mode .trending-row .text-dark { color: #e5e7eb !important; }
     font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
 }
 
+.chart-unavailable {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 28px 22px;
+    margin: 16px 0;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #374151;
+}
+html.dark-mode .chart-unavailable {
+    border-color: #374151;
+    background: #111827;
+    color: #e5e7eb;
+}
+.news-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 42px 20px;
+    color: #6b7280;
+    text-align: center;
+}
+.news-empty-state i { font-size: 2rem; }
+.google-signin-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.google-logo { width: 18px; height: 18px; flex: 0 0 auto; }
+
 /* ====== SIGN OUT ====== */
 .nav-signout-btn { border-radius: 50px; padding: 10px 24px; font-weight: 600; }
 html:not(.dark-mode) .nav-signout-btn { border-color: #fca5a5; color: #dc2626; }
@@ -405,4 +447,6 @@ html.dark-mode .nav-signout-btn:hover { background: rgba(239,68,68,0.1); border-
     .text-main, .text-blue { font-size: 0.95rem; }
     .logo-box { width: 28px; height: 28px; margin-right: 6px; }
     .logo-icon { font-size: 1rem; }
+    .my-header .nav-signout-btn,
+    .my-header .nav-signup-btn { display: none; }
 }
