@@ -6,29 +6,41 @@
     <p class="text-muted small mb-4">Relevant market stories, refreshed from Finnhub.</p>
     <div id="market-news-feed">
         {% for item in news %}
-        <article class="news-feed-card">
+        <article class="news-feed-card" data-news-key="{{ item.url or (item.source ~ ':' ~ item.headline) }}">
             <small class="text-primary fw-bold">{{ item.source }}</small>
             <h2 class="h6 mt-1"><a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.headline }}</a></h2>
             <p class="small text-muted mb-1">{{ item.summary }}</p>
         </article>
+        {% else %}
+        <div class="news-empty-state">
+            <i class="bi bi-newspaper" aria-hidden="true"></i>
+            <strong>No recent market news available.</strong>
+            <span>Check back later for the latest market stories.</span>
+        </div>
         {% endfor %}
     </div>
-    <button id="market-news-more" class="btn btn-outline-secondary btn-sm mt-3" type="button">Load more stories</button>
+    <button id="market-news-more" class="btn btn-outline-secondary btn-sm mt-3" type="button">Load More Stories</button>
 </section>
 <script>
-let newsOffset = {{ news_next_offset }};
-let newsHasMore = {{ 'true' if news_has_more else 'false' }};
+let marketNewsOffset = {{ news_next_offset }};
+let marketNewsHasMore = {{ 'true' if news_has_more else 'false' }};
 const newsButton = document.getElementById('market-news-more');
 newsButton.addEventListener('click', async () => {
-    if (!newsHasMore) return;
+    if (!marketNewsHasMore) return;
     newsButton.disabled = true;
     newsButton.textContent = 'Loading…';
-    const response = await fetch(`/api/news/market?offset=${newsOffset}`);
-    const payload = await response.json();
-    const feed = document.getElementById('market-news-feed');
-    payload.items.forEach(item => {
+    try {
+        const response = await fetch(`/api/news/market?offset=${marketNewsOffset}`);
+        if (!response.ok) throw new Error(`News request failed: ${response.status}`);
+        const payload = await response.json();
+        if (!Array.isArray(payload.items)) throw new Error('Invalid news response');
+        const feed = document.getElementById('market-news-feed');
+        payload.items.forEach(item => {
+        const key = item.url || `${item.source || ''}:${item.headline || ''}`;
+        if (document.querySelector(`[data-news-key="${CSS.escape(key)}"]`)) return;
         const article = document.createElement('article');
         article.className = 'news-feed-card';
+        article.dataset.newsKey = key;
         const source = document.createElement('small');
         source.className = 'text-primary fw-bold';
         source.textContent = item.source || '';
@@ -44,13 +56,17 @@ newsButton.addEventListener('click', async () => {
         summary.className = 'small text-muted mb-1';
         summary.textContent = item.summary || '';
         article.append(source, title, summary);
-        feed.appendChild(article);
-    });
-    newsOffset = payload.next_offset;
-    newsHasMore = payload.has_more;
-    newsButton.disabled = !newsHasMore;
-    newsButton.textContent = newsHasMore ? 'Load more stories' : 'No more stories';
+            feed.appendChild(article);
+        });
+        marketNewsOffset = payload.next_offset;
+        marketNewsHasMore = payload.has_more;
+        newsButton.disabled = !marketNewsHasMore;
+        newsButton.textContent = marketNewsHasMore ? 'Load More Stories' : 'No more stories';
+    } catch (error) {
+        newsButton.disabled = false;
+        newsButton.textContent = 'Load More Stories';
+    }
 });
-if (!newsHasMore) { newsButton.disabled = true; newsButton.textContent = 'No more stories'; }
+if (!marketNewsHasMore) { newsButton.disabled = true; newsButton.textContent = 'No more stories'; }
 </script>
 {% endblock %}

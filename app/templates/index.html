@@ -34,12 +34,16 @@
                 <div class="d-flex flex-column overflow-hidden">
                     <span class="fw-bold text-dark lh-1 text-truncate">{{ stock.symbol }}</span>
                     <span class="text-muted tiny-text mt-1 text-uppercase text-truncate">{{ stock.name }}</span>
+                    <span class="tiny-text mt-1 text-muted">Price: {% if stock.price is not none %}{{ '%.2f'|format(stock.price) }}{% else %}Data unavailable{% endif %}</span>
                 </div>
             </div>
 
-            <div class="pulse-container {{ 'pos' if stock.price_change >= 0 else 'neg' }}">
+            <div class="text-end">
+            <div class="pulse-container {{ 'pos' if stock.price_change is not none and stock.price_change >= 0 else 'neg' }}">
                 <span class="indicator"></span>
-                <span class="score-value">{{"+" if stock.price_change > 0 }}{{ stock.price_change }}%</span>
+                <span class="score-value">{% if stock.price_change is not none %}{{"+" if stock.price_change > 0 }}{{ '%.2f'|format(stock.price_change) }}%{% else %}Unavailable{% endif %}</span>
+            </div>
+            <span class="tiny-text text-muted">Change: {% if stock.change is not none %}{{ '+' if stock.change > 0 }}{{ '%.2f'|format(stock.change) }}{% else %}—{% endif %}</span>
             </div>
         </a>
     {% endfor %}

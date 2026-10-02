@@ -30,9 +30,9 @@
                 <a class="watchlist-card-link" href="/quote?symbol={{ item.symbol|urlencode }}">
                     <span class="watchlist-symbol">{{ item.symbol }}</span>
                     <span class="watchlist-name text-muted">{{ item.name }}</span>
-                    {% if item.price_change is not none %}
-                    <span class="watchlist-change {{ 'positive' if item.price_change >= 0 else 'negative' }}">{{ '+' if item.price_change > 0 }}{{ '%.2f'|format(item.price_change) }}%</span>
-                    {% else %}<span class="watchlist-change text-muted">Data unavailable</span>{% endif %}
+                    <span class="watchlist-price">{% if item.price is not none %}{{ '%.2f'|format(item.price) }}{% else %}Data unavailable{% endif %}</span>
+                    <span class="watchlist-change {{ 'positive' if item.price_change is not none and item.price_change >= 0 else 'negative' }}">{% if item.price_change is not none %}{{ '+' if item.price_change > 0 }}{{ '%.2f'|format(item.price_change) }}%{% else %}—{% endif %}</span>
+                    <span class="watchlist-absolute-change text-muted">{% if item.change is not none %}Change: {{ '+' if item.change > 0 }}{{ '%.2f'|format(item.change) }}{% else %}Change: —{% endif %}</span>
                 </a>
                 <button class="watchlist-remove" type="button" data-symbol="{{ item.symbol }}" aria-label="Remove {{ item.symbol }} from watchlist" title="Remove from watchlist"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 7h14m-9 4v6m4-6v6M9 7V4.75A.75.75 0 0 1 9.75 4h4.5a.75.75 0 0 1 .75.75V7m-8.5 0 .7 13h5.6l.7-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             </article>

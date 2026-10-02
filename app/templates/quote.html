@@ -12,6 +12,16 @@
                 </button>
             </div>
             <p class="text-muted small mb-0">{{ instrument.exchange if instrument else 'Unknown exchange' }} · {{ instrument.asset_type if instrument else 'stock' }} · {{ instrument.display_name if instrument else '' }}</p>
+            <div class="quote-snapshot" aria-label="Latest quote">
+                <span class="quote-price">{% if quote and quote.price is not none %}{{ '%.2f'|format(quote.price) }}{% else %}Data unavailable{% endif %}</span>
+                <span class="quote-change {% if quote and quote.change_percent is not none and quote.change_percent >= 0 %}positive{% elif quote and quote.change_percent is not none %}negative{% endif %}">
+                    {% if quote and quote.change_percent is not none %}{{ '+' if quote.change_percent > 0 }}{{ '%.2f'|format(quote.change_percent) }}%{% else %}Daily change unavailable{% endif %}
+                </span>
+                <span class="quote-absolute-change text-muted">
+                    Change: {% if quote and quote.change is not none %}{{ '+' if quote.change > 0 }}{{ '%.2f'|format(quote.change) }}{% else %}—{% endif %}
+                </span>
+                {% if quote and quote.as_of %}<span class="quote-as-of text-muted">As of {{ quote.as_of }}</span>{% endif %}
+            </div>
         </div>
         <div class="chart-controls" aria-label="Chart controls">
             <div class="chart-control-group">
@@ -35,18 +45,24 @@
     </div>
     <div id="tradingview_chart" class="chart-surface"></div>
     <div id="fallback_chart" class="chart-surface" style="display:none;"></div>
+    <div id="chart-unavailable" class="chart-unavailable" hidden role="status">
+        <strong>Stock data is temporarily unavailable for this instrument.</strong>
+        <span>MarketPulse could not retrieve usable data from the available data sources.</span>
+    </div>
     <div id="fallback-chart-status" class="small text-muted mt-1" aria-live="polite"></div>
 </section>
 <section class="quote-news mt-4" aria-labelledby="quote-news-title">
     <h2 id="quote-news-title" class="h5">{{ symbol }} news</h2>
     <div id="instrument-news-list">
         {% for item in news %}
-        <article class="news-item border-bottom py-3">
+        <article class="news-item border-bottom py-3" data-news-key="{{ item.url or (item.source ~ ':' ~ item.headline) }}">
             <small class="text-primary fw-bold">{{ item.source }}</small>
             <h3 class="h6 mt-1 mb-1">{{ item.headline }}</h3>
             <p class="small text-muted mb-1">{{ item.summary }}</p>
             <time class="tiny-text text-muted">{{ item.datetime }}</time>
         </article>
+        {% else %}
+        <p class="text-muted small py-3">No recent news available for this instrument.</p>
         {% endfor %}
     </div>
     <button id="load-instrument-news" class="btn btn-sm btn-outline-secondary mt-2" type="button">Load more news</button>
@@ -60,6 +76,8 @@ const rangeSelect = document.getElementById('chartRange');
 const intervalSelect = document.getElementById('chartInterval');
 const fallbackContainer = document.getElementById('fallback_chart');
 const tradingViewContainer = document.getElementById('tradingview_chart');
+const chartControls = document.querySelector('.chart-controls');
+const unavailableState = document.getElementById('chart-unavailable');
 let chartMode = 'line';
 let selectedRange = rangeSelect.value;
 let selectedInterval = null;
@@ -68,13 +86,16 @@ let instrumentNewsOffset = {{ news_next_offset|default(5) }};
 let instrumentNewsHasMore = {{ 'true' if news_has_more|default(false) else 'false' }};
 
 function loadTradingViewWidget() {
+    unavailableState.hidden = true;
+    chartControls.hidden = false;
     const container = tradingViewContainer;
     container.replaceChildren();
     const widget = document.createElement('div');
     widget.className = 'tradingview-widget-container__widget';
     container.appendChild(widget);
     const tvIntervals = {'1m': '1', '5m': '5', '15m': '15', '30m': '30', '1h': '60', '1d': 'D', '1wk': 'W', '1mo': 'M'};
-    const tvConfig = {autosize: true, symbol: chartSymbol, interval: tvIntervals[selectedInterval] || 'W', timezone: 'Etc/UTC', theme: 'dark', style: chartMode === 'line' ? '2' : '1', locale: 'en', hide_side_toolbar: true, allow_symbol_change: false, range: selectedRange};
+    const tvRanges = {'1d': '1D', '5d': '5D', '1mo': '1M', '3mo': '3M', '6mo': '6M', '1y': '1Y', '5y': '5Y', 'max': 'ALL'};
+    const tvConfig = {autosize: true, symbol: chartSymbol, interval: tvIntervals[selectedInterval] || 'W', timezone: 'Etc/UTC', theme: 'dark', style: chartMode === 'line' ? '2' : '1', locale: 'en', hide_side_toolbar: true, allow_symbol_change: false, range: tvRanges[selectedRange] || '1Y'};
     let fbTimer = null;
     const script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
@@ -101,6 +122,10 @@ function loadChartLibrary() {
 }
 
 function renderFallback(points) {
+    if (!Array.isArray(points) || points.length === 0) {
+        showChartUnavailable('No historical data was returned for the selected configuration.');
+        return;
+    }
     fallbackContainer.replaceChildren();
     const h = Math.max(280, Math.min(400, window.innerHeight * 0.4));
     fallbackChart = LightweightCharts.createChart(fallbackContainer, {
@@ -119,6 +144,14 @@ function renderFallback(points) {
         : ({ time: Math.floor(new Date(point.time).getTime() / 1000), open: point.open, high: point.high, low: point.low, close: point.close })));
     fallbackChart.timeScale().fitContent();
     window.addEventListener('resize', () => fallbackChart?.applyOptions({ width: fallbackContainer.clientWidth || 700 }));
+}
+
+function showChartUnavailable(message) {
+    tradingViewContainer.style.display = 'none';
+    fallbackContainer.style.display = 'none';
+    chartControls.hidden = true;
+    unavailableState.hidden = false;
+    chartStatus.textContent = message || '';
 }
 
 function updateIntervals(intervals, defaultInterval) {
@@ -146,9 +179,13 @@ async function loadFallbackGraph() {
     const params = new URLSearchParams({ mode: chartMode, range: selectedRange });
     if (selectedInterval) params.set('interval', selectedInterval);
     const response = await fetch(`/api/graph/${encodeURIComponent(canonicalSymbol)}?${params}`);
+    if (!response.ok) {
+        showChartUnavailable('Chart data is temporarily unavailable.');
+        return;
+    }
     const payload = await response.json();
-    if (payload.status === 'error') {
-        chartStatus.textContent = 'Fallback market data is currently unavailable.';
+    if (payload.status !== 'ok' || !Array.isArray(payload.points) || payload.points.length === 0) {
+        showChartUnavailable('Fallback market data is currently unavailable.');
         return;
     }
     selectedInterval = payload.interval;
@@ -160,7 +197,7 @@ async function loadFallbackGraph() {
         renderFallback(payload.points);
         chartStatus.textContent = `Fallback ${chartMode} chart: ${payload.range} / ${payload.interval}`;
     } catch (error) {
-        chartStatus.textContent = 'Chart renderer unavailable. Market data could not be displayed.';
+        showChartUnavailable('Chart renderer unavailable. Market data could not be displayed.');
     }
 }
 
@@ -193,12 +230,21 @@ intervalSelect.addEventListener('change', () => {
 });
 document.getElementById('load-instrument-news')?.addEventListener('click', async () => {
     if (!instrumentNewsHasMore) return;
-    const response = await fetch(`/api/news/instrument/${encodeURIComponent(canonicalSymbol)}?offset=${instrumentNewsOffset}`);
-    const data = await response.json();
-    const list = document.getElementById('instrument-news-list');
-    data.items.forEach(item => {
+    const button = document.getElementById('load-instrument-news');
+    button.disabled = true;
+    button.textContent = 'Loading…';
+    try {
+        const response = await fetch(`/api/news/instrument/${encodeURIComponent(canonicalSymbol)}?offset=${instrumentNewsOffset}`);
+        if (!response.ok) throw new Error(`News request failed: ${response.status}`);
+        const data = await response.json();
+        if (!Array.isArray(data.items)) throw new Error('Invalid news response');
+        const list = document.getElementById('instrument-news-list');
+        data.items.forEach(item => {
+        const key = item.url || `${item.source || ''}:${item.headline || ''}`;
+        if (document.querySelector(`[data-news-key="${CSS.escape(key)}"]`)) return;
         const article = document.createElement('article');
         article.className = 'news-item border-bottom py-3';
+        article.dataset.newsKey = key;
         const source = document.createElement('small');
         source.className = 'text-primary fw-bold';
         source.textContent = item.source || '';
@@ -209,16 +255,28 @@ document.getElementById('load-instrument-news')?.addEventListener('click', async
         summary.className = 'small text-muted mb-1';
         summary.textContent = item.summary || '';
         article.append(source, title, summary);
-        list.appendChild(article);
-    });
-    instrumentNewsOffset = data.next_offset;
-    instrumentNewsHasMore = data.has_more;
-    if (!instrumentNewsHasMore) document.getElementById('load-instrument-news').textContent = 'No more news available';
+            list.appendChild(article);
+        });
+        instrumentNewsOffset = data.next_offset;
+        instrumentNewsHasMore = data.has_more;
+        button.textContent = instrumentNewsHasMore ? 'Load more news' : 'No more news available';
+        button.disabled = !instrumentNewsHasMore;
+    } catch (error) {
+        button.disabled = false;
+        button.textContent = 'Load more news';
+    }
 });
+if (!instrumentNewsHasMore) {
+    const instrumentNewsButton = document.getElementById('load-instrument-news');
+    if (instrumentNewsButton) {
+        instrumentNewsButton.disabled = true;
+        instrumentNewsButton.textContent = 'No more news available';
+    }
+}
 document.getElementById('watchlistToggle')?.addEventListener('click', async () => {
     const button = document.getElementById('watchlistToggle');
     const saved = button.dataset.saved === 'true';
-    const response = await fetch(saved ? `/api/watchlists/${encodeURIComponent(canonicalSymbol)}` : '/api/watchlists', {
+    const response = await fetch(saved ? `/api/watchlists/${encodeURIComponent(canonicalSymbol)}` : '/api/watchlists/add', {
         method: saved ? 'DELETE' : 'POST',
         headers: {'Content-Type': 'application/json'},
         body: saved ? undefined : JSON.stringify({symbol: canonicalSymbol})
@@ -236,9 +294,20 @@ document.getElementById('watchlistToggle')?.addEventListener('click', async () =
     button.querySelector('.watchlist-icon').querySelector('path').setAttribute('fill', nextSaved ? 'currentColor' : 'none');
     button.querySelector('span').textContent = nextSaved ? 'Saved' : 'Add to Watchlist';
 });
-loadChartConfig().catch(() => {
-    chartStatus.textContent = 'Chart configuration is temporarily unavailable.';
+const watchlistButton = document.getElementById('watchlistToggle');
+watchlistButton?.addEventListener('mouseenter', () => {
+    if (watchlistButton.dataset.saved === 'true') watchlistButton.querySelector('span').textContent = 'Remove';
 });
-loadTradingViewWidget();
+watchlistButton?.addEventListener('mouseleave', () => {
+    if (watchlistButton.dataset.saved === 'true') watchlistButton.querySelector('span').textContent = 'Saved';
+});
+(async () => {
+    try {
+        await loadChartConfig();
+        loadTradingViewWidget();
+    } catch (error) {
+        loadFallbackGraph().catch(() => showChartUnavailable('Chart configuration is temporarily unavailable.'));
+    }
+})();
 </script>
 {% endblock %}
