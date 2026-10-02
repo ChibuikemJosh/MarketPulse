@@ -1,5 +1,6 @@
 """FastAPI-rendered page routes."""
 
+import asyncio
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
@@ -20,10 +21,18 @@ async def index(request: Request):
     redis: RedisService = request.app.state.redis
     scores = await redis.get_trending_scores()
     names = await redis.get_cached_names()
-    stocks = [
-        {"symbol": symbol, "name": names.get(symbol, symbol), "price_change": float(change)}
-        for symbol, change in scores.items()
-    ]
+    stocks = []
+    for symbol, change in scores.items():
+        metadata = await redis.get_trending_metadata(symbol) or {}
+        stocks.append({
+            "symbol": symbol,
+            "name": names.get(symbol, symbol),
+            "price": metadata.get("price"),
+            "change": metadata.get("change"),
+            "price_change": metadata.get("change_percent", float(change)),
+            "as_of": metadata.get("as_of"),
+            "data_status": metadata.get("status", "unavailable"),
+        })
     stocks.sort(key=lambda item: abs(item["price_change"]), reverse=True)
     news_page = await get_market_news(redis, 0)
     user = get_current_user(request)
@@ -47,6 +56,29 @@ async def quote_page(request: Request, symbol: str):
     redis: RedisService = request.app.state.redis
     news_page = await get_instrument_news(instrument.symbol if instrument else symbol, redis, 0)
     user = get_current_user(request)
+    quote = None
+    orchestrator = getattr(request.app.state, "market_data", None)
+    if instrument and orchestrator:
+        try:
+            result = await asyncio.wait_for(orchestrator.quote(instrument), timeout=3)
+            if not hasattr(result, "provider"):
+                quote = result
+            else:
+                metadata = await redis.get_trending_metadata(instrument.symbol) or {}
+                quote = {
+                    "price": metadata.get("price"),
+                    "change": metadata.get("change"),
+                    "change_percent": metadata.get("change_percent"),
+                    "as_of": metadata.get("as_of"),
+                }
+        except asyncio.TimeoutError:
+            metadata = await redis.get_trending_metadata(instrument.symbol) or {}
+            quote = {
+                "price": metadata.get("price"),
+                "change": metadata.get("change"),
+                "change_percent": metadata.get("change_percent"),
+                "as_of": metadata.get("as_of"),
+            }
     is_watchlisted = False
     if user and instrument:
         is_watchlisted = check_watchlist_item(user.id, instrument.symbol)
@@ -63,6 +95,7 @@ async def quote_page(request: Request, symbol: str):
             "user_authenticated": user is not None,
             "current_user": user,
             "is_watchlisted": is_watchlisted,
+            "quote": quote,
         },
     )
 
@@ -77,10 +110,16 @@ async def watchlist_page(request: Request):
         symbols = list_watchlist_items(user.id)
         names = await redis.get_cached_names()
         trends = await redis.get_trending_scores()
-        watchlist = [
-            {"symbol": item, "name": names.get(item, item), "price_change": trends.get(item)}
-            for item in symbols
-        ]
+        for item in symbols:
+            metadata = await redis.get_trending_metadata(item) or {}
+            watchlist.append({
+                "symbol": item,
+                "name": names.get(item, item),
+                "price": metadata.get("price"),
+                "change": metadata.get("change"),
+                "price_change": metadata.get("change_percent", trends.get(item)),
+                "as_of": metadata.get("as_of"),
+            })
     return templates.TemplateResponse(
         request=request,
         name="watchlist.html",
