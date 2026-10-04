@@ -137,6 +137,16 @@ class TestNewsPagination:
         assert result["items"] == []
         assert result["has_more"] is False
 
+    @pytest.mark.asyncio
+    async def test_news_payload_excludes_internal_ids(self):
+        from app.services.news import get_market_news
+        from app.cache.redis import RedisService
+        mock_redis = AsyncMock(spec=RedisService)
+        mock_redis.market_cache_key.return_value = "news-general-market-finnhub"
+        mock_redis.get_market_cache.return_value = {"data": [{"id": 99, "headline": "Article", "source": "T"}]}
+        result = await get_market_news(mock_redis, 0)
+        assert "id" not in result["items"][0]
+
 
 class TestMarketData:
     """Verify provider failure handling and Nigerian instrument preservation."""
