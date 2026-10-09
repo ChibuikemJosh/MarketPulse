@@ -9,6 +9,7 @@ from redis.asyncio.lock import Lock
 
 import app.cache.locks as Locks
 import app.cache.keys as keys
+
 import app.core.config as config
 import app.core.constants as constants
 
@@ -87,7 +88,8 @@ class RedisService:
 
     async def get_user_weights(self, user_id: str) -> dict[str, float] | None:
         """Return every cached weight for one user."""
-        values = await self.redis.hgetall(self._user_weight_key(user_id))
+        key = self._user_weight_key(user_id)
+        values = await self.redis.hgetall(key)
         return {symbol: float(weight) for symbol, weight in values.items()}
 
     async def set_user_weights(self, user_id: str, weights: dict[str, float]) -> None:
@@ -198,7 +200,8 @@ class RedisService:
     async def get_alpha_vantage_calls(self) -> int | None:
         """Return today's Alpha Vantage call count without incrementing it."""
         today_str = datetime.now().strftime(constants.DATE_FORMAT)
-        value = await self.redis.get(keys.API_STATS.format(today_str=today_str))
+        key = keys.API_STATS.format(today_str)
+        value = await self.redis.get(key)
         return int(value) if value is not None else 0
 
     # --- 5. DOUBLE-ENDED QUEUE (List) ---
