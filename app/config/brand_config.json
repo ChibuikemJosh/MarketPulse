@@ -1043,5 +1043,11 @@
   ],
   "RZT.FRK": [
     "Merafe Resources"
+  ],
+  "AAPL.TRT": [
+    "Apple CDR (CAD Hedged)"
+  ],
+  "AAPLUSTRAD.BSE": [
+    "AA Plus Tradelink"
   ]
 }
