@@ -3,7 +3,7 @@
 import logging
 
 from app.cache.redis import RedisService
-from app.core.config import API_LIMITS
+from app.core.config import PROVIDER_RATE_LIMITS
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ async def can_call_alpha_vantage_api(redis: RedisService) -> bool:
     """
     try:
         calls = await redis.get_alpha_vantage_calls()
-        return calls < API_LIMITS["ALPHA_VANTAGE"]
+        return calls < PROVIDER_RATE_LIMITS["alpha_vantage_daily"]
     except Exception:
         logger.error("Unable to read Alpha Vantage quota", exc_info=True)
         return False
