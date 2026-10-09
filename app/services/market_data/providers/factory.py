@@ -2,7 +2,9 @@
 import httpx
 
 from app.core import config
+
 from app.services.market_data.base import MarketDataProvider
+
 from app.services.market_data.providers.massive import MassiveProvider
 from app.services.market_data.providers.tiingo import TiingoProvider
 from app.services.market_data.providers.tradingview import TradingViewProvider

@@ -6,6 +6,8 @@ import logging
 import httpx
 
 from app.core import config
+from app.cache.redis import RedisService
+
 from app.services.market_data.base import MarketDataProvider
 from app.services.market_data.models import Candle, Instrument, ProviderFailure, Quote
 
@@ -18,7 +20,7 @@ class MassiveProvider(MarketDataProvider):
     name = "massive"
     base_url = "https://api.massive.com"
 
-    def __init__(self, api_key: str = config.MASSIVE_API_KEY, redis=None, client: httpx.AsyncClient | None = None):
+    def __init__(self, api_key: str = config.MASSIVE_API_KEY, redis : RedisService | None =None, client: httpx.AsyncClient | None = None):
         self.api_key = api_key
         self.redis = redis
         self._client = client if client else httpx.AsyncClient(timeout=config.PROVIDER_TIMEOUT_SECONDS)
