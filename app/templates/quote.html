@@ -14,13 +14,13 @@
             <p class="text-muted small mb-0">{{ instrument.exchange if instrument else 'Unknown exchange' }} · {{ instrument.asset_type if instrument else 'stock' }} · {{ instrument.display_name if instrument else '' }}</p>
             <div class="quote-snapshot" aria-label="Latest quote">
                 <span class="quote-price">{% if quote and quote.price is not none %}{{ '%.2f'|format(quote.price) }}{% else %}Data unavailable{% endif %}</span>
-                <span class="quote-change {% if quote and quote.change_percent is not none and quote.change_percent >= 0 %}positive{% elif quote and quote.change_percent is not none %}negative{% endif %}">
+                <span class="quote-change {% if not quote or quote.change_percent is none or quote.change_percent == 0 %}neutral{% elif quote.change_percent > 0 %}positive{% else %}negative{% endif %}">
                     {% if quote and quote.change_percent is not none %}{{ '+' if quote.change_percent > 0 }}{{ '%.2f'|format(quote.change_percent) }}%{% else %}Daily change unavailable{% endif %}
                 </span>
                 <span class="quote-absolute-change text-muted">
                     Change: {% if quote and quote.change is not none %}{{ '+' if quote.change > 0 }}{{ '%.2f'|format(quote.change) }}{% else %}—{% endif %}
                 </span>
-                {% if quote and quote.as_of %}<span class="quote-as-of text-muted">As of {{ quote.as_of }}</span>{% endif %}
+                {% if quote and quote.as_of %}<span class="quote-as-of text-muted"></span>{% endif %}
             </div>
         </div>
         <div class="chart-controls" aria-label="Chart controls">
@@ -59,7 +59,6 @@
             <small class="text-primary fw-bold">{{ item.source }}</small>
             <h3 class="h6 mt-1 mb-1">{{ item.headline }}</h3>
             <p class="small text-muted mb-1">{{ item.summary }}</p>
-            <time class="tiny-text text-muted">{{ item.datetime }}</time>
         </article>
         {% else %}
         <p class="text-muted small py-3">No recent news available for this instrument.</p>
@@ -82,30 +81,38 @@ let chartMode = 'line';
 let selectedRange = rangeSelect.value;
 let selectedInterval = null;
 let fallbackChart = null;
+let chartRequestId = 0;
 let instrumentNewsOffset = {{ news_next_offset|default(5) }};
 let instrumentNewsHasMore = {{ 'true' if news_has_more|default(false) else 'false' }};
 
 function loadTradingViewWidget() {
+    const requestId = ++chartRequestId;
     unavailableState.hidden = true;
     chartControls.hidden = false;
     const container = tradingViewContainer;
     container.replaceChildren();
     const widget = document.createElement('div');
     widget.className = 'tradingview-widget-container__widget';
+    widget.style.width = '100%';
+    widget.style.height = '100%';
     container.appendChild(widget);
     const tvIntervals = {'1m': '1', '5m': '5', '15m': '15', '30m': '30', '1h': '60', '1d': 'D', '1wk': 'W', '1mo': 'M'};
-    const tvRanges = {'1d': '1D', '5d': '5D', '1mo': '1M', '3mo': '3M', '6mo': '6M', '1y': '1Y', '5y': '5Y', 'max': 'ALL'};
-    const tvConfig = {autosize: true, symbol: chartSymbol, interval: tvIntervals[selectedInterval] || 'W', timezone: 'Etc/UTC', theme: 'dark', style: chartMode === 'line' ? '2' : '1', locale: 'en', hide_side_toolbar: true, allow_symbol_change: false, range: tvRanges[selectedRange] || '1Y'};
+    const tvRanges = {'1d': '1D', '5d': '5D', '1mo': '1M', '3mo': '3M', '6mo': '6M', '1y': '12M', '5y': '60M', 'max': 'ALL'};
+    const tvConfig = {autosize: true, height: container.clientHeight || 400, symbol: chartSymbol, interval: tvIntervals[selectedInterval] || 'W', timezone: 'Etc/UTC', theme: 'dark', style: chartMode === 'line' ? '2' : '1', locale: 'en', hide_side_toolbar: true, allow_symbol_change: false, range: tvRanges[selectedRange] || '12M'};
     let fbTimer = null;
     const script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
     script.async = true;
     script.type = 'text/javascript';
     script.text = JSON.stringify(tvConfig);
-    script.onerror = () => { if (fbTimer) clearTimeout(fbTimer); loadFallbackGraph(); };
+    script.onerror = () => {
+        if (fbTimer) clearTimeout(fbTimer);
+        if (requestId === chartRequestId) loadFallbackGraph(requestId);
+    };
     container.appendChild(script);
     fbTimer = setTimeout(() => {
-        if (!tradingViewContainer.querySelector('iframe')) { loadFallbackGraph(); }
+        if (requestId !== chartRequestId) return;
+        if (!tradingViewContainer.querySelector('iframe')) { loadFallbackGraph(requestId); }
         else { chartStatus.textContent = 'TradingView: ' + chartSymbol; }
     }, 8000);
 }
@@ -127,7 +134,7 @@ function renderFallback(points) {
         return;
     }
     fallbackContainer.replaceChildren();
-    const h = Math.max(280, Math.min(400, window.innerHeight * 0.4));
+    const h = fallbackContainer.clientHeight || 400;
     fallbackChart = LightweightCharts.createChart(fallbackContainer, {
         width: fallbackContainer.clientWidth || 700, height: h,
         layout: { background: { color: '#1a1b1e' }, textColor: '#94a3b8' },
@@ -143,7 +150,10 @@ function renderFallback(points) {
         ? ({ time: Math.floor(new Date(point.time).getTime() / 1000), value: point.value })
         : ({ time: Math.floor(new Date(point.time).getTime() / 1000), open: point.open, high: point.high, low: point.low, close: point.close })));
     fallbackChart.timeScale().fitContent();
-    window.addEventListener('resize', () => fallbackChart?.applyOptions({ width: fallbackContainer.clientWidth || 700 }));
+    window.addEventListener('resize', () => fallbackChart?.applyOptions({
+        width: fallbackContainer.clientWidth || 700,
+        height: fallbackContainer.clientHeight || 400,
+    }));
 }
 
 function showChartUnavailable(message) {
@@ -174,16 +184,19 @@ async function loadChartConfig() {
     if (config) updateIntervals(config.allowed_intervals, config.default_interval);
 }
 
-async function loadFallbackGraph() {
+async function loadFallbackGraph(requestId = chartRequestId) {
+    if (requestId !== chartRequestId) return;
     chartStatus.textContent = 'TradingView chart unavailable. Loading normalized fallback data.';
     const params = new URLSearchParams({ mode: chartMode, range: selectedRange });
     if (selectedInterval) params.set('interval', selectedInterval);
     const response = await fetch(`/api/graph/${encodeURIComponent(canonicalSymbol)}?${params}`);
+    if (requestId !== chartRequestId) return;
     if (!response.ok) {
         showChartUnavailable('Chart data is temporarily unavailable.');
         return;
     }
     const payload = await response.json();
+    if (requestId !== chartRequestId) return;
     if (payload.status !== 'ok' || !Array.isArray(payload.points) || payload.points.length === 0) {
         showChartUnavailable('Fallback market data is currently unavailable.');
         return;

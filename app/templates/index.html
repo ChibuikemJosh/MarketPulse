@@ -39,7 +39,7 @@
             </div>
 
             <div class="text-end">
-            <div class="pulse-container {{ 'pos' if stock.price_change is not none and stock.price_change >= 0 else 'neg' }}">
+            <div class="pulse-container {% if stock.price_change is none or stock.price_change == 0 %}neutral{% elif stock.price_change > 0 %}pos{% else %}neg{% endif %}">
                 <span class="indicator"></span>
                 <span class="score-value">{% if stock.price_change is not none %}{{"+" if stock.price_change > 0 }}{{ '%.2f'|format(stock.price_change) }}%{% else %}Unavailable{% endif %}</span>
             </div>

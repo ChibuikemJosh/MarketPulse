@@ -259,14 +259,31 @@ html.dark-mode .trending-row:hover { background: #374151; }
     background: #1a1b1e;
     border-radius: 12px;
     width: 100%;
+    height: 60vh;
     min-height: 400px;
     margin: 16px 0;
     border: 1px solid #333;
     position: relative;
     overflow: hidden;
 }
-@media (max-width: 768px) { .chart-surface { min-height: 280px; } }
-@media (max-width: 480px) { .chart-surface { min-height: 220px; } }
+#tradingview_chart,
+#fallback_chart,
+#tradingview_chart .tradingview-widget-container__widget {
+    width: 100%;
+    height: 100%;
+}
+#tradingview_chart iframe {
+    width: 100% !important;
+    height: 100% !important;
+    border: 0;
+    display: block;
+}
+@media (max-width: 768px) {
+    .chart-surface { height: 50vh; min-height: 280px; }
+}
+@media (max-width: 480px) {
+    .chart-surface { height: 45vh; min-height: 220px; }
+}
 
 /* ====== WATCHLIST TOGGLE ====== */
 .watchlist-toggle {
@@ -304,6 +321,7 @@ html.dark-mode .watchlist-toggle.saved:hover { border-color: #ef4444; color: #f8
 .watchlist-absolute-change { font-size: 0.75rem; white-space: nowrap; }
 .watchlist-change.positive { color: #22c55e; }
 .watchlist-change.negative { color: #ef4444; }
+.watchlist-change.neutral { color: #eab308; }
 .watchlist-remove {
     flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
     width: 34px; height: 34px; border-radius: 8px; border: none;
@@ -320,6 +338,7 @@ html.dark-mode .watchlist-price { color: #111827; }
 .quote-change { font-weight: 700; }
 .quote-change.positive, .positive { color: #16a34a; }
 .quote-change.negative, .negative { color: #dc2626; }
+.quote-change.neutral { color: #eab308; }
 .quote-as-of { font-size: 0.7rem; }
 html.dark-mode .quote-price { color: #111827; }
 html.dark-mode .watchlist-card .watchlist-name,
@@ -376,6 +395,22 @@ html.dark-mode .trending-row:hover {
     background: #2d3748; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.12);
 }
 html.dark-mode .trending-row .text-dark { color: #111827 !important; }
+html.dark-mode .trending-row .text-dark,
+html.dark-mode .trending-row .asset-info .fw-bold {
+    color: #e5e7eb !important;
+}
+html.dark-mode .trending-row .text-muted {
+    color: #cbd5e1 !important;
+}
+.pulse-container.neutral {
+    color: #eab308;
+    background-color: rgba(234, 179, 8, 0.12);
+}
+.pulse-container.neutral .indicator::before {
+    content: "•";
+    color: currentColor;
+    font-size: 0.9rem;
+}
 
 /* ====== MOBILE NAV ====== */
 .mobile-nav-menu {

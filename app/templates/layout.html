@@ -279,7 +279,9 @@ async function syncDashboard() {
             row.href = `/quote?symbol=${stock.symbol}`;
             row.className = 'trending-row fade-in-row d-flex align-items-center justify-content-between p-3 mb-2 rounded-3 text-decoration-none';
 
-            const posNeg = stock.price_change >= 0 ? 'pos' : 'neg';
+            const posNeg = stock.price_change == null || Number(stock.price_change) === 0
+                ? 'neutral'
+                : (Number(stock.price_change) > 0 ? 'pos' : 'neg');
             const sign = stock.price_change > 0 ? '+' : '';
 
             const assetInfo = document.createElement('div');
