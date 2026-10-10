@@ -52,7 +52,7 @@ class Quote:
     """A normalized latest quote or market snapshot."""
 
     symbol: str
-    price: float | None
+    price: float | None = None
     previous_close: float | None = None
     change: float | None  = None
     change_percent: float | None = None

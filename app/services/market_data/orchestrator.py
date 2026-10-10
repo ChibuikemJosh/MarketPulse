@@ -121,8 +121,11 @@ class MarketDataOrchestrator:
         for attempt in range(attempts):
             try:
                 result = await asyncio.wait_for(operation(*args), timeout=config.PROVIDER_TIMEOUT_SECONDS)
-                if isinstance(result, ProviderFailure) and result.retryable:
+                if isinstance(result, ProviderFailure):
                     last_failure = result
+
+                    if not result.retryable:
+                        return result
                 else:
                     return result
             except asyncio.TimeoutError:

@@ -1,12 +1,12 @@
 """Persistence operations for click analytics."""
-
+import sqlite3
 import logging
 from collections.abc import Iterable
 from datetime import datetime
 from typing import Optional
 
 from app.core.constants import TIME_FORMAT
-from app.database.connection import get_db_connection
+from app.database.connection import db_session
 from app.models.click import ClickRecord
 
 logger = logging.getLogger(__name__)
@@ -30,11 +30,11 @@ def insert_clicks(records: Iterable[ClickRecord]) -> int:
     ]
     
     if not values:
-        logger.error("Invalid record values", exc_info=True)
+        logger.debug("No click records provided to persist.", exc_info=True) 
         return 0
-
+    
     try:
-        with get_db_connection() as connection:
+        with db_session() as connection:
             connection.executemany(
                 "INSERT INTO clicks (symbol, user_id, timestamp) VALUES (?, ?, ?)",
                 values,
@@ -59,18 +59,20 @@ def get_clicks_since(since: datetime, user_id: Optional[str] = None) -> list[tup
         Pairs of symbol and database timestamp string.
     """
     try:
-        with get_db_connection() as connection:
+        since_str = since.strftime(TIME_FORMAT)
+
+        with db_session() as connection:
             if user_id is None:
                 rows = connection.execute(
                     "SELECT symbol, timestamp FROM clicks WHERE timestamp > ?",
-                    (since.strftime(TIME_FORMAT),),
+                    (since_str,),
                 ).fetchall()
 
             else:
                 rows = connection.execute(
                     "SELECT symbol, timestamp FROM clicks "
                     "WHERE user_id = ? AND timestamp > ?",
-                    (user_id, since.strftime(TIME_FORMAT)),
+                    (user_id, since_str),
                 ).fetchall()
 
         return [(row["symbol"], row["timestamp"]) for row in rows]

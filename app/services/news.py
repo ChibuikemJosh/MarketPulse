@@ -54,7 +54,6 @@ def _fetch_company(symbol: str, start: str, end: str) -> list[dict[str, Any]]:
 def _normalize(article: dict[str, Any]) -> dict[str, Any]:
     """Return only frontend-safe, stable news fields."""
     return {
-        "id": article.get("id"),
         "headline": article.get("headline", ""),
         "summary": article.get("summary", ""),
         "source": article.get("source", ""),
@@ -75,7 +74,7 @@ async def get_market_news(redis: RedisService, offset: int = 0) -> dict[str, Any
             filtered.sort(key=lambda article: (_score(article), article.get("datetime", 0)), reverse=True)
             cached = {"provider": "finnhub", "fetched_at": datetime.now(timezone.utc).isoformat(), "data": [_normalize(article) for article in filtered]}
             await redis.set_market_cache(cache_key, cached, NEWS_CACHE_TTL)
-        articles = cached.get("data", [])
+        articles = [_normalize(article) for article in cached.get("data", [])]
         limit = GENERAL_INITIAL_LIMIT if offset == 0 else PAGE_SIZE
         page = articles[offset:offset + limit]
         return {"items": page, "offset": offset, "has_more": offset + len(page) < len(articles), "next_offset": offset + len(page)}
@@ -100,7 +99,7 @@ async def get_instrument_news(symbol: str, redis: RedisService, offset: int = 0)
             filtered = [article for article in articles if pattern.search(f"{article.get('headline', '')} {article.get('summary', '')}")]
             cached = {"provider": "finnhub", "fetched_at": datetime.now(timezone.utc).isoformat(), "data": [_normalize(article) for article in filtered]}
             await redis.set_market_cache(cache_key, cached, NEWS_CACHE_TTL)
-        articles = cached.get("data", [])
+        articles = [_normalize(article) for article in cached.get("data", [])]
         page = articles[offset:offset + PAGE_SIZE]
         return {"items": page, "symbol": symbol.upper(), "offset": offset, "has_more": offset + len(page) < len(articles), "next_offset": offset + len(page)}
     except Exception:

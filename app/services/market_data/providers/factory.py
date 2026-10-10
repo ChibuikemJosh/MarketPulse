@@ -1,19 +1,21 @@
 """Construction of the configured market-data provider chain."""
+import httpx
 
 from app.core import config
+
 from app.services.market_data.base import MarketDataProvider
+
 from app.services.market_data.providers.massive import MassiveProvider
 from app.services.market_data.providers.tiingo import TiingoProvider
 from app.services.market_data.providers.tradingview import TradingViewProvider
 from app.services.market_data.providers.yfinance import YFinanceProvider
 
-
-def build_default_providers(redis=None) -> list[MarketDataProvider]:
+def build_default_providers(redis=None, client : httpx.AsyncClient | None = None) -> list[MarketDataProvider]:
     """Build providers in the requested historical/live fallback order."""
     candidates: dict[str, MarketDataProvider] = {
         "tradingview": TradingViewProvider(),
         "yfinance": YFinanceProvider(),
-        "massive": MassiveProvider(redis=redis),
-        "tiingo": TiingoProvider(redis=redis),
+        "massive": MassiveProvider(config.MASSIVE_API_KEY, redis=redis, client=client),
+        "tiingo": TiingoProvider(config.TIINGO_API_KEY, redis=redis, client=client),
     }
     return [provider for name, provider in candidates.items() if config.PROVIDER_ENABLED.get(name, False)]

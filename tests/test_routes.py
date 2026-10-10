@@ -7,6 +7,9 @@ def test_fastapi_routes_are_registered():
     paths = set(app.openapi()["paths"])
     assert "/api/search" in paths
     assert "/api/dashboard-updates" in paths
+    assert "/api/market-updates" in paths
+    assert "/api/watchlists/add" in paths
+    assert "/api/candles/{instrument_id}" in paths
     assert "/api/graph/{instrument_id}" in paths
     assert "/api/chart-config" in paths
     assert "/candles/{instrument_id}" in paths

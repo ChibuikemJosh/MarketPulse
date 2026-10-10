@@ -22,7 +22,7 @@ def test_every_range_has_an_allowed_default():
 
 def test_invalid_interval_resolves_to_range_default():
     assert not validate_interval("1y", "5m")
-    assert resolve_interval("1y", "5m") == "1d"
+    assert resolve_interval("1y", "5m") == "1wk"
     assert get_allowed_intervals("5d") == ["5m", "15m", "30m", "1h"]
 
 

@@ -26,7 +26,7 @@ CHART_RANGES: dict[str, ChartRange] = {
     "1mo": ChartRange("1mo", "1h", ("15m", "30m", "1h", "1d"), 30),
     "3mo": ChartRange("3mo", "1d", ("1h", "1d"), 90),
     "6mo": ChartRange("6mo", "1d", ("1d",), 180),
-    "1y": ChartRange("1y", "1d", ("1d", "1wk"), 365),
+    "1y": ChartRange("1y", "1wk", ("1d", "1wk"), 365),
     "5y": ChartRange("5y", "1wk", ("1d", "1wk", "1mo"), 1825),
     "max": ChartRange("max", "1mo", ("1wk", "1mo"), None),
 }
@@ -66,5 +66,12 @@ def calculate_date_range(range_key: str | None, end_date: date | None = None) ->
     which trading sessions actually contain candles.
     """
     end = end_date or date.today()
+
+    if end_date is None:
+        if end.weekday() == 5:    # Saturday
+            end = end - timedelta(days=1)
+        elif end.weekday() == 6:  # Sunday
+            end = end - timedelta(days=2)
+
     days = get_chart_range(range_key).days
     return (end - timedelta(days=days) if days is not None else None, end)

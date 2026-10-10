@@ -2,7 +2,7 @@
 
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.routers.dependencies import get_orchestrator, resolve_requested_instrument
 from app.services.market_data.graph import candle_points, line_points
@@ -28,8 +28,10 @@ async def chart_config_endpoint():
 
 
 @router.get("/candles/{instrument_id:path}")
+@router.get("/api/candles/{instrument_id:path}")
 async def candles_endpoint(
     instrument_id: str,
+    request: Request,
     start: date | None = None,
     end: date | None = None,
     range_key: str = Query(default="1y", alias="range"),
@@ -37,7 +39,7 @@ async def candles_endpoint(
     orchestrator: MarketDataOrchestrator = Depends(get_orchestrator),
 ):
     """Return normalized OHLCV candles from the provider fallback chain."""
-    instrument = resolve_requested_instrument(instrument_id)
+    instrument = resolve_requested_instrument(request, instrument_id)
     chart_range = get_chart_range(range_key)
     calculated_start, calculated_end = calculate_date_range(chart_range.key, end)
     end_date = end or calculated_end
@@ -52,6 +54,7 @@ async def candles_endpoint(
 @router.get("/api/graph/{instrument_id:path}")
 async def graph_endpoint(
     instrument_id: str,
+    request: Request,
     mode: str = Query(default="line", pattern="^(line|candle)$"),
     range_key: str = Query(default="1y", alias="range"),
     start: date | None = None,
@@ -60,7 +63,7 @@ async def graph_endpoint(
     orchestrator: MarketDataOrchestrator = Depends(get_orchestrator),
 ):
     """Return line or candlestick graph points using the same normalized candles."""
-    instrument = resolve_requested_instrument(instrument_id)
+    instrument = resolve_requested_instrument(request, instrument_id)
     chart_range = get_chart_range(range_key)
     calculated_start, calculated_end = calculate_date_range(chart_range.key, end)
     end_date = end or calculated_end
@@ -76,10 +79,11 @@ async def graph_endpoint(
 @router.get("/api/quote")
 async def quote_endpoint(
     symbol: str,
+    request: Request,
     orchestrator: MarketDataOrchestrator = Depends(get_orchestrator),
 ):
     """Return a normalized latest quote for a configured instrument."""
-    instrument = resolve_requested_instrument(symbol)
+    instrument = resolve_requested_instrument(request, symbol)
     result = await orchestrator.quote(instrument)
     if isinstance(result, ProviderFailure):
         return {"status": "error", "error": result.__dict__, "symbol": instrument.symbol}

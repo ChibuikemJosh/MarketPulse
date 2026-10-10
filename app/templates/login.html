@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block title %}Sign In{% endblock %}
+{% block content %}
+<section class="auth-panel mx-auto" style="max-width: 460px;">
+    <h1 class="h4 mb-1">Welcome back</h1>
+    <p class="text-muted small mb-4">Sign in to access your watchlist and personalized market activity.</p>
+    {% if error %}<div class="alert alert-danger small">{{ error }}</div>{% endif %}
+    <form action="/login" method="post" class="d-grid gap-3">
+        <input type="hidden" name="next" value="{{ next|default('/') }}">
+        <label class="small fw-semibold" for="username">Username</label>
+        <input id="username" name="username" class="form-control" autocomplete="username" required>
+        <label class="small fw-semibold" for="password">Password</label>
+        <input id="password" type="password" name="password" class="form-control" autocomplete="current-password" required>
+        <button class="btn btn-primary fw-semibold" type="submit">Sign in</button>
+    </form>
+    {% if google_enabled %}
+    <a class="btn btn-outline-secondary w-100 mt-3 google-signin-button" href="/auth/google">
+        <svg class="google-logo" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="#4285F4" d="M21.6 12.23c0-.68-.06-1.34-.17-1.97H12v3.73h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.22c1.89-1.74 2.99-4.3 2.99-7.29Z"/>
+            <path fill="#34A853" d="M12 22c2.7 0 4.97-.89 6.62-2.41l-3.22-2.51c-.89.6-2.02.96-3.4.96-2.61 0-4.83-1.76-5.62-4.13H3.05v2.59A10 10 0 0 0 12 22Z"/>
+            <path fill="#FBBC05" d="M6.38 13.91A6.01 6.01 0 0 1 6.06 12c0-.66.11-1.3.32-1.91V7.5H3.05A10 10 0 0 0 2 12c0 1.61.39 3.13 1.05 4.5l3.33-2.59Z"/>
+            <path fill="#EA4335" d="M12 5.96c1.47 0 2.79.51 3.83 1.51l2.87-2.87C16.97 2.91 14.7 2 12 2a10 10 0 0 0-8.95 5.5l3.33 2.59C7.17 7.72 9.39 5.96 12 5.96Z"/>
+        </svg>
+        Continue with Google
+    </a>
+    {% endif %}
+    <p class="small text-muted mt-4 mb-0">Don't have an account? <a href="/signup">Create one</a></p>
+</section>
+{% endblock %}

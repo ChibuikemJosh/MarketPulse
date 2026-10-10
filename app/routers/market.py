@@ -19,10 +19,20 @@ async def market_updates(
     """Return paginated cached trends for the dashboard."""
     scores = await redis.get_trending_scores()
     names = await redis.get_cached_names()
-    stocks = [
-        {"symbol": symbol, "name": names.get(symbol, symbol), "price_change": round(float(change), 2)}
-        for symbol, change in scores.items()
-    ]
+    stocks = []
+    for symbol, change in scores.items():
+        metadata = await redis.get_trending_metadata(symbol) or {}
+        percentage = metadata.get("change_percent")
+        if percentage is None:
+            percentage = change
+        stocks.append({
+            "symbol": symbol,
+            "name": names.get(symbol, symbol),
+            "price": metadata.get("price"),
+            "change": metadata.get("change"),
+            "price_change": round(float(percentage), 2),
+            "as_of": metadata.get("as_of"),
+        })
     stocks.sort(key=lambda item: abs(item["price_change"]), reverse=True)
-    news_page = await get_market_news(redis, offset)
-    return {"stocks": stocks[offset:offset + limit], "news": news_page["items"], "news_has_more": news_page["has_more"], "news_next_offset": news_page["next_offset"]}
+
+    return {"stocks": stocks[offset:offset + limit]}

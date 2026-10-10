@@ -2,34 +2,66 @@
 {% block title %}{{ symbol }} Quote{% endblock %}
 {% block content %}
 <section class="quote-page">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
         <div>
-            <h1 class="h4 mb-1">{{ symbol }}</h1>
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="h4 mb-1">{{ symbol }}</h1>
+                <button id="watchlistToggle" type="button" class="watchlist-toggle {% if is_watchlisted %}saved{% endif %}" aria-label="{{ 'Remove from watchlist' if is_watchlisted else 'Add to watchlist' }}" title="{{ 'Remove from watchlist' if is_watchlisted else 'Add to watchlist' }}" data-symbol="{{ symbol }}" data-saved="{{ 'true' if is_watchlisted else 'false' }}">
+                    <svg class="watchlist-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3.75A1.75 1.75 0 0 1 7.75 2h8.5A1.75 1.75 0 0 1 18 3.75V22l-6-3.5L6 22V3.75Z" fill="{{ 'currentColor' if is_watchlisted else 'none' }}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                    <span>{{ 'Saved' if is_watchlisted else 'Add to Watchlist' }}</span>
+                </button>
+            </div>
             <p class="text-muted small mb-0">{{ instrument.exchange if instrument else 'Unknown exchange' }} · {{ instrument.asset_type if instrument else 'stock' }} · {{ instrument.display_name if instrument else '' }}</p>
+            <div class="quote-snapshot" aria-label="Latest quote">
+                <span class="quote-price">{% if quote and quote.price is not none %}{{ '%.2f'|format(quote.price) }}{% else %}Data unavailable{% endif %}</span>
+                <span class="quote-change {% if not quote or quote.change_percent is none or quote.change_percent == 0 %}neutral{% elif quote.change_percent > 0 %}positive{% else %}negative{% endif %}">
+                    {% if quote and quote.change_percent is not none %}{{ '+' if quote.change_percent > 0 }}{{ '%.2f'|format(quote.change_percent) }}%{% else %}Daily change unavailable{% endif %}
+                </span>
+                <span class="quote-absolute-change text-muted">
+                    Change: {% if quote and quote.change is not none %}{{ '+' if quote.change > 0 }}{{ '%.2f'|format(quote.change) }}{% else %}—{% endif %}
+                </span>
+                {% if quote and quote.as_of %}<span class="quote-as-of text-muted"></span>{% endif %}
+            </div>
         </div>
-        <div class="d-flex flex-wrap gap-2 align-items-center" aria-label="Chart controls">
-            <select id="chartRange" class="form-select form-select-sm" aria-label="Chart range">
-                <option value="1d">1D</option><option value="5d">5D</option><option value="1mo">1M</option><option value="3mo">3M</option><option value="6mo">6M</option><option value="1y" selected>1Y</option><option value="5y">5Y</option><option value="max">MAX</option>
-            </select>
-            <select id="chartInterval" class="form-select form-select-sm" aria-label="Chart interval"></select>
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-chart-mode="line">Line</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-chart-mode="candle">Candles</button>
+        <div class="chart-controls" aria-label="Chart controls">
+            <div class="chart-control-group">
+                <span class="chart-control-label">Period</span>
+                <select id="chartRange" class="chart-control-select" aria-label="Chart range">
+                    <option value="1d">1D</option><option value="5d">5D</option><option value="1mo">1M</option><option value="3mo">3M</option><option value="6mo">6M</option><option value="1y" selected>1Y</option><option value="5y">5Y</option><option value="max">MAX</option>
+                </select>
+            </div>
+            <div class="chart-control-group">
+                <span class="chart-control-label">Interval</span>
+                <select id="chartInterval" class="chart-control-select" aria-label="Chart interval"></select>
+            </div>
+            <div class="chart-control-group">
+                <span class="chart-control-label">Mode</span>
+                <div style="display:flex;gap:4px">
+                    <button type="button" class="chart-mode-btn active" data-chart-mode="line" aria-label="Line chart">Line</button>
+                    <button type="button" class="chart-mode-btn" data-chart-mode="candle" aria-label="Candlestick chart">Candles</button>
+                </div>
+            </div>
         </div>
     </div>
-    <div id="tradingview_chart" style="height: 520px; width: 100%;"></div>
-    <div id="fallback_chart" style="display:none;height:520px;width:100%;"></div>
-    <div id="fallback-chart-status" class="small text-muted mt-2" aria-live="polite"></div>
+    <div id="tradingview_chart" class="chart-surface"></div>
+    <div id="fallback_chart" class="chart-surface" style="display:none;"></div>
+    <div id="chart-unavailable" class="chart-unavailable" hidden role="status">
+        <strong>Stock data is temporarily unavailable for this instrument.</strong>
+        <span>MarketPulse could not retrieve usable data from the available data sources.</span>
+    </div>
+    <div id="fallback-chart-status" class="small text-muted mt-1" aria-live="polite"></div>
 </section>
 <section class="quote-news mt-4" aria-labelledby="quote-news-title">
     <h2 id="quote-news-title" class="h5">{{ symbol }} news</h2>
     <div id="instrument-news-list">
         {% for item in news %}
-        <article class="news-item border-bottom py-3">
+        <article class="news-item border-bottom py-3" data-news-key="{{ item.url or (item.source ~ ':' ~ item.headline) }}">
             <small class="text-primary fw-bold">{{ item.source }}</small>
             <h3 class="h6 mt-1 mb-1">{{ item.headline }}</h3>
             <p class="small text-muted mb-1">{{ item.summary }}</p>
-            <time class="tiny-text text-muted">{{ item.datetime }}</time>
         </article>
+        {% else %}
+        <p class="text-muted small py-3">No recent news available for this instrument.</p>
         {% endfor %}
     </div>
     <button id="load-instrument-news" class="btn btn-sm btn-outline-secondary mt-2" type="button">Load more news</button>
@@ -43,35 +75,46 @@ const rangeSelect = document.getElementById('chartRange');
 const intervalSelect = document.getElementById('chartInterval');
 const fallbackContainer = document.getElementById('fallback_chart');
 const tradingViewContainer = document.getElementById('tradingview_chart');
+const chartControls = document.querySelector('.chart-controls');
+const unavailableState = document.getElementById('chart-unavailable');
 let chartMode = 'line';
 let selectedRange = rangeSelect.value;
 let selectedInterval = null;
 let fallbackChart = null;
+let chartRequestId = 0;
 let instrumentNewsOffset = {{ news_next_offset|default(5) }};
 let instrumentNewsHasMore = {{ 'true' if news_has_more|default(false) else 'false' }};
 
 function loadTradingViewWidget() {
+    const requestId = ++chartRequestId;
+    unavailableState.hidden = true;
+    chartControls.hidden = false;
     const container = tradingViewContainer;
     container.replaceChildren();
     const widget = document.createElement('div');
     widget.className = 'tradingview-widget-container__widget';
+    widget.style.width = '100%';
+    widget.style.height = '100%';
     container.appendChild(widget);
-    const config = document.createElement('script');
-    config.type = 'text/javascript';
-    config.text = JSON.stringify({autosize: true, symbol: chartSymbol, interval: 'D', timezone: 'Etc/UTC', theme: 'light', style: '1', locale: 'en', hide_side_toolbar: true, allow_symbol_change: false});
-    container.appendChild(config);
+    const tvIntervals = {'1m': '1', '5m': '5', '15m': '15', '30m': '30', '1h': '60', '1d': 'D', '1wk': 'W', '1mo': 'M'};
+    const tvRanges = {'1d': '1D', '5d': '5D', '1mo': '1M', '3mo': '3M', '6mo': '6M', '1y': '12M', '5y': '60M', 'max': 'ALL'};
+    const tvConfig = {autosize: true, height: container.clientHeight || 400, symbol: chartSymbol, interval: tvIntervals[selectedInterval] || 'W', timezone: 'Etc/UTC', theme: 'dark', style: chartMode === 'line' ? '2' : '1', locale: 'en', hide_side_toolbar: true, allow_symbol_change: false, range: tvRanges[selectedRange] || '12M'};
+    let fbTimer = null;
     const script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
     script.async = true;
-    script.onerror = () => loadFallbackGraph();
+    script.type = 'text/javascript';
+    script.text = JSON.stringify(tvConfig);
+    script.onerror = () => {
+        if (fbTimer) clearTimeout(fbTimer);
+        if (requestId === chartRequestId) loadFallbackGraph(requestId);
+    };
     container.appendChild(script);
-    window.setTimeout(() => {
-        if (tradingViewContainer.querySelector('iframe')) {
-            chartStatus.textContent = `TradingView chart: ${chartSymbol}`;
-        } else {
-            loadFallbackGraph();
-        }
-    }, 6000);
+    fbTimer = setTimeout(() => {
+        if (requestId !== chartRequestId) return;
+        if (!tradingViewContainer.querySelector('iframe')) { loadFallbackGraph(requestId); }
+        else { chartStatus.textContent = 'TradingView: ' + chartSymbol; }
+    }, 8000);
 }
 
 function loadChartLibrary() {
@@ -86,14 +129,19 @@ function loadChartLibrary() {
 }
 
 function renderFallback(points) {
+    if (!Array.isArray(points) || points.length === 0) {
+        showChartUnavailable('No historical data was returned for the selected configuration.');
+        return;
+    }
     fallbackContainer.replaceChildren();
+    const h = fallbackContainer.clientHeight || 400;
     fallbackChart = LightweightCharts.createChart(fallbackContainer, {
-        width: fallbackContainer.clientWidth || 700,
-        height: 520,
-        layout: { background: { color: 'transparent' }, textColor: '#64748b' },
-        grid: { vertLines: { color: '#e2e8f0' }, horzLines: { color: '#e2e8f0' } },
-        timeScale: { borderColor: '#cbd5e1', timeVisible: true },
-        rightPriceScale: { borderColor: '#cbd5e1' }
+        width: fallbackContainer.clientWidth || 700, height: h,
+        layout: { background: { color: '#1a1b1e' }, textColor: '#94a3b8' },
+        grid: { vertLines: { color: '#2d3748' }, horzLines: { color: '#2d3748' } },
+        timeScale: { borderColor: '#4a5568', timeVisible: true, fixRightEdge: true, fixLeftEdge: true, rightBarStaysOnScroll: false },
+        rightPriceScale: { borderColor: '#4a5568' },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
     });
     const series = chartMode === 'line'
         ? fallbackChart.addLineSeries({ color: '#2563eb', lineWidth: 2 })
@@ -102,7 +150,18 @@ function renderFallback(points) {
         ? ({ time: Math.floor(new Date(point.time).getTime() / 1000), value: point.value })
         : ({ time: Math.floor(new Date(point.time).getTime() / 1000), open: point.open, high: point.high, low: point.low, close: point.close })));
     fallbackChart.timeScale().fitContent();
-    window.addEventListener('resize', () => fallbackChart?.applyOptions({ width: fallbackContainer.clientWidth || 700 }));
+    window.addEventListener('resize', () => fallbackChart?.applyOptions({
+        width: fallbackContainer.clientWidth || 700,
+        height: fallbackContainer.clientHeight || 400,
+    }));
+}
+
+function showChartUnavailable(message) {
+    tradingViewContainer.style.display = 'none';
+    fallbackContainer.style.display = 'none';
+    chartControls.hidden = true;
+    unavailableState.hidden = false;
+    chartStatus.textContent = message || '';
 }
 
 function updateIntervals(intervals, defaultInterval) {
@@ -125,14 +184,21 @@ async function loadChartConfig() {
     if (config) updateIntervals(config.allowed_intervals, config.default_interval);
 }
 
-async function loadFallbackGraph() {
+async function loadFallbackGraph(requestId = chartRequestId) {
+    if (requestId !== chartRequestId) return;
     chartStatus.textContent = 'TradingView chart unavailable. Loading normalized fallback data.';
     const params = new URLSearchParams({ mode: chartMode, range: selectedRange });
     if (selectedInterval) params.set('interval', selectedInterval);
     const response = await fetch(`/api/graph/${encodeURIComponent(canonicalSymbol)}?${params}`);
+    if (requestId !== chartRequestId) return;
+    if (!response.ok) {
+        showChartUnavailable('Chart data is temporarily unavailable.');
+        return;
+    }
     const payload = await response.json();
-    if (payload.status === 'error') {
-        chartStatus.textContent = 'Fallback market data is currently unavailable.';
+    if (requestId !== chartRequestId) return;
+    if (payload.status !== 'ok' || !Array.isArray(payload.points) || payload.points.length === 0) {
+        showChartUnavailable('Fallback market data is currently unavailable.');
         return;
     }
     selectedInterval = payload.interval;
@@ -144,33 +210,54 @@ async function loadFallbackGraph() {
         renderFallback(payload.points);
         chartStatus.textContent = `Fallback ${chartMode} chart: ${payload.range} / ${payload.interval}`;
     } catch (error) {
-        chartStatus.textContent = 'Chart renderer unavailable. Market data could not be displayed.';
+        showChartUnavailable('Chart renderer unavailable. Market data could not be displayed.');
     }
 }
 
 document.querySelectorAll('[data-chart-mode]').forEach(button => {
     button.addEventListener('click', () => {
+        document.querySelectorAll('[data-chart-mode]').forEach(b => b.classList.toggle('active', b === button));
         chartMode = button.dataset.chartMode;
-        loadFallbackGraph();
+        tradingViewContainer.replaceChildren();
+        fallbackContainer.style.display = 'none';
+        tradingViewContainer.style.display = 'block';
+        loadTradingViewWidget();
     });
 });
 rangeSelect.addEventListener('change', () => {
     selectedRange = rangeSelect.value;
     selectedInterval = null;
-    loadFallbackGraph();
+    loadChartConfig().then(() => {
+        tradingViewContainer.replaceChildren();
+        fallbackContainer.style.display = 'none';
+        tradingViewContainer.style.display = 'block';
+        loadTradingViewWidget();
+    }).catch(() => loadFallbackGraph());
 });
 intervalSelect.addEventListener('change', () => {
     selectedInterval = intervalSelect.value;
-    loadFallbackGraph();
+    tradingViewContainer.replaceChildren();
+    fallbackContainer.style.display = 'none';
+    tradingViewContainer.style.display = 'block';
+    loadTradingViewWidget();
 });
 document.getElementById('load-instrument-news')?.addEventListener('click', async () => {
     if (!instrumentNewsHasMore) return;
-    const response = await fetch(`/api/news/instrument/${encodeURIComponent(canonicalSymbol)}?offset=${instrumentNewsOffset}`);
-    const data = await response.json();
-    const list = document.getElementById('instrument-news-list');
-    data.items.forEach(item => {
+    const button = document.getElementById('load-instrument-news');
+    button.disabled = true;
+    button.textContent = 'Loading…';
+    try {
+        const response = await fetch(`/api/news/instrument/${encodeURIComponent(canonicalSymbol)}?offset=${instrumentNewsOffset}`);
+        if (!response.ok) throw new Error(`News request failed: ${response.status}`);
+        const data = await response.json();
+        if (!Array.isArray(data.items)) throw new Error('Invalid news response');
+        const list = document.getElementById('instrument-news-list');
+        data.items.forEach(item => {
+        const key = item.url || `${item.source || ''}:${item.headline || ''}`;
+        if (document.querySelector(`[data-news-key="${CSS.escape(key)}"]`)) return;
         const article = document.createElement('article');
         article.className = 'news-item border-bottom py-3';
+        article.dataset.newsKey = key;
         const source = document.createElement('small');
         source.className = 'text-primary fw-bold';
         source.textContent = item.source || '';
@@ -181,15 +268,59 @@ document.getElementById('load-instrument-news')?.addEventListener('click', async
         summary.className = 'small text-muted mb-1';
         summary.textContent = item.summary || '';
         article.append(source, title, summary);
-        list.appendChild(article);
+            list.appendChild(article);
+        });
+        instrumentNewsOffset = data.next_offset;
+        instrumentNewsHasMore = data.has_more;
+        button.textContent = instrumentNewsHasMore ? 'Load more news' : 'No more news available';
+        button.disabled = !instrumentNewsHasMore;
+    } catch (error) {
+        button.disabled = false;
+        button.textContent = 'Load more news';
+    }
+});
+if (!instrumentNewsHasMore) {
+    const instrumentNewsButton = document.getElementById('load-instrument-news');
+    if (instrumentNewsButton) {
+        instrumentNewsButton.disabled = true;
+        instrumentNewsButton.textContent = 'No more news available';
+    }
+}
+document.getElementById('watchlistToggle')?.addEventListener('click', async () => {
+    const button = document.getElementById('watchlistToggle');
+    const saved = button.dataset.saved === 'true';
+    const response = await fetch(saved ? `/api/watchlists/${encodeURIComponent(canonicalSymbol)}` : '/api/watchlists/add', {
+        method: saved ? 'DELETE' : 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: saved ? undefined : JSON.stringify({symbol: canonicalSymbol})
     });
-    instrumentNewsOffset = data.next_offset;
-    instrumentNewsHasMore = data.has_more;
-    if (!instrumentNewsHasMore) document.getElementById('load-instrument-news').textContent = 'No more news available';
+    if (response.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        return;
+    }
+    if (!response.ok) return;
+    const nextSaved = !saved;
+    button.dataset.saved = String(nextSaved);
+    button.classList.toggle('saved', nextSaved);
+    button.setAttribute('aria-label', nextSaved ? 'Remove from watchlist' : 'Add to watchlist');
+    button.title = nextSaved ? 'Remove from watchlist' : 'Add to watchlist';
+    button.querySelector('.watchlist-icon').querySelector('path').setAttribute('fill', nextSaved ? 'currentColor' : 'none');
+    button.querySelector('span').textContent = nextSaved ? 'Saved' : 'Add to Watchlist';
 });
-loadChartConfig().catch(() => {
-    chartStatus.textContent = 'Chart configuration is temporarily unavailable.';
+const watchlistButton = document.getElementById('watchlistToggle');
+watchlistButton?.addEventListener('mouseenter', () => {
+    if (watchlistButton.dataset.saved === 'true') watchlistButton.querySelector('span').textContent = 'Remove';
 });
-loadTradingViewWidget();
+watchlistButton?.addEventListener('mouseleave', () => {
+    if (watchlistButton.dataset.saved === 'true') watchlistButton.querySelector('span').textContent = 'Saved';
+});
+(async () => {
+    try {
+        await loadChartConfig();
+        loadTradingViewWidget();
+    } catch (error) {
+        loadFallbackGraph().catch(() => showChartUnavailable('Chart configuration is temporarily unavailable.'));
+    }
+})();
 </script>
 {% endblock %}
